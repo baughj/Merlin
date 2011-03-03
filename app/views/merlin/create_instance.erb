@@ -1,0 +1,49 @@
+<html>
+  <head>
+    <%= javascript_include_tag "prototype" %>
+    <%= formtastic_stylesheet_link_tag %>
+  </head>
+  <body>
+    <p>Here, you can run new instances on any cloud Merlin controls.
+    </p>
+    <% semantic_form_for @instance do |form| %>
+      <% form.inputs do %>
+        <%= form.input :cloud, :as => :select, :collection => Cloud.all, :include_blank => false, :hint => "The cloud that will contain the instance." %>
+        <%= form.input :availability_zone, :as => :select, :collection => Cloud.first.availability_zone, :hint => "The zone the instance will run in. Leave it blank for default placement (cloud decides).", :include_blank => false %>
+        <%= form.input :instance_type, :hint => "The type of instance that will be started.", :include_blank => false %>
+        <%= form.input :hostname, :hint => "The hostname that will be assigned to the instance." %>
+        <%= form.input :userdata, :hint => "The user data that will be provided to the new instance.", :name => "User Data", :required => false %>
+        <%= form.input :key_pair, :hint => "The keypair that will be used for the instance.", :name => "Keypair", :required => true %>
+        <%= form.input :security_group, :hint => "The initial security group for the instance. Please note, for clouds that only support one group per VM, only the first selected one will be used!", :name => "Security Group", :required => true, :label_method => Proc.new { |a| "#{a.name}:#{a.owner_id}" } %>
+      <% end %>
+      <%= form.buttons %>
+
+    <% end %>
+
+    <%= observe_field("instance_cloud_id",
+        :frequency => 0.25,
+        :update => "instance_availability_zone_id",
+        :url => '/clouds/get_zones_select',
+        :with => "cloud_id") %>
+
+    <%= observe_field("instance_cloud_id",
+        :frequency => 0.25,
+        :update => "instance_instance_type_id",
+        :url => '/clouds/get_instance_types_select',
+        :with => "cloud_id") %>
+
+    <%= observe_field("instance_cloud_id",
+        :frequency => 0.25,
+        :update => "instance_key_pair_id",
+        :url => '/clouds/get_key_pairs_select',
+        :with => "cloud_id") %>
+
+    <%= observe_field("instance_cloud_id",
+        :frequency => 0.25,
+        :update => "instance_security_group_ids",
+        :url => '/clouds/get_security_groups_select',
+        :with => "cloud_id") %>
+
+    </form>
+  </body>
+</html>

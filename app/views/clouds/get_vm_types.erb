@@ -1,0 +1,3 @@
+<select id="availability_zone" name="availability_zone">
+<%= options_from_collection_for_select(VmType.find_all_by_cloud_id(params[:cloud_id]), "id", "name") %>
+</select>

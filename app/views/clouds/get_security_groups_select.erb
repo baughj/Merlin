@@ -1,0 +1,1 @@
+<%= options_from_collection_for_select(SecurityGroup.find_all_by_cloud_id(params[:cloud_id]), "id", :name_with_owner) %>

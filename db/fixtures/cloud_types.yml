@@ -1,0 +1,17 @@
+amazon:
+  id: 1
+  name: "aws"
+  description: "An Amazon EC2 cloud"
+  support_elastic_ip: true
+  support_multiple_ebs_volumes: true
+  support_multiple_sec_groups: true
+  use_root_path: true
+
+eucalyptus:
+  id: 2
+  name: "eucalyptus"
+  description: "A Eucalyptus cloud"
+  support_elastic_ip: true
+  support_multiple_ebs_volumes: false
+  support_multiple_sec_groups: false
+  use_root_path: false

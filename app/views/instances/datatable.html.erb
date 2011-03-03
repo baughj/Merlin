@@ -1,0 +1,12 @@
+{"sEcho": <%= params[:sEcho] || -1 %>,
+ "iTotalRecords" : <%= @total_objects %>,
+ "iTotalDisplayRecords" : <%= @total_objects %>,
+ "aaData" : [<% @objects.each do |object| %>
+  ["<%= object.status_code %>",
+   "<%= object.instance_id %>",
+   "<%= object.hostname %>",
+   "<%= object.status_message %>",
+   "<%= object.ip_address %>"
+  ],
+  <% end %>
+]}

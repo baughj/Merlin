@@ -1,0 +1,103 @@
+<!--
+
+# This file is part of Merlin, an EC2 API-compatible cloud
+# computing frontend.
+#
+# Copyright (C) 2010, 2011, Justin Baugh <baughj@discordians.net>
+#
+# Merlin is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+-->
+
+
+<html>
+  <head>
+    <title>Merlin: Main Page</title>
+    <%= render "yahoo_css" %>
+    <%= stylesheet_link_tag "merlin" %>
+    <%= render "yahoo_js" %>
+    <%= javascript_include_tag "prettyprint.js" %>
+    <%= javascript_include_tag "rowexpansion.js" %>
+    <%= javascript_include_tag "index.js" %>
+    <%= javascript_include_tag "prototype" %>
+    <%= formtastic_stylesheet_link_tag %>
+  </head>
+  <body class="yui-skin-sam">
+    <h1>Merlin - Cloud Overview</h1>
+    <div id="dialogAddInstance" class="yui-pe-content">
+      <div class="hd">Launch a New Instance</div>
+      <div class="bd"> 
+        <p>
+          From here, you can launch any number of instances in multiple clouds.
+        </p>
+        Placement: <%= select_tag "availability_zone",
+                       option_groups_from_collection_for_select(Cloud.all, :availability_zone, :name, :id, :name) %>
+                       
+
+      </div>
+    </div>
+
+
+    <div id="dialogAddCloud" class="yui-pe-content">
+      <div class="hd">Add A Cloud</div>
+      <div class="bd"> 
+        <p>
+          This will add a cloud to Merlin, which will trigger a refresh of all objects active inside the specified
+          cloud. You will then be able to manage objects inside the cloud from Merlin directly.
+        </p>
+        <% semantic_form_for @cloud do |form| %>
+          <% form.inputs "Basic Information", :id => "basic" do %>
+            <%= form.input :name, :label => "Cloud Name", :hint => "Descriptive name for this cloud", :required => true %>
+            <%= form.input :api_url, :label => "API Endpoint URL", :hint => "http://foo.bar/services/Eucalyptus", :required => true %> 
+            <%= form.input :api_usessl, :label => "Use SSL", :default => true, :required => false %>
+            <%= form.input :query_key, :label => "API Query Key", :hint => "The query key to be used for API authentication", :required => true %>
+            <%= form.input :query_key_id, :label => "API Query Key ID", :hint => "The query key ID to be used for API authentication", :required => true %> 
+          <% end %>
+          <% form.inputs :name => "Puppet Options", :id => "advanced" do %>
+            <%= form.input :puppet_server, :label => "Puppet Server", :hint => "The hostname of the puppet server (must be accessible from within the cloud)", :required => false %>
+            <%= form.input :puppet_port, :label => "Puppet Port", :hint => "The port used to communicate with Puppet. If left blank, the default is used.", :required => false %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+
+    <div id="merlin" class="yui-navset">
+      <ul class="yui-nav">
+        <li class="selected"><a href="#tab1"><em>Instances</em></a></li>
+        <li><a href="#tab2"><em>Volumes</em></a></li>
+        <li><a href="#tab3"><em>Snapshots</em></a></li>
+        <li><a href="#tab4"><em>Configuration</em></a></li>
+      </ul>
+      <div class="yui-content">
+        <div id="tab1">
+          <div class="menutab">
+            <img src="/images/launch.png" alt="Launch new instance" id="addInstance">
+            <img src="/images/refresh.png" alt="Refresh view">
+          </div>
+          <div id="instanceTable" class="instanceTable"></div>
+        </div>
+        <div id="tab2">
+          <p>Volumes</p>
+        </div>
+        <div id="tab3">
+          <p>Snapshots</p>
+        </div>
+        <div id="tab4">
+          <a href="#stuff" id="addCloud">Add a cloud</a></br>
+          <a href="/merlin/cloud/refresh">Refresh one or more clouds with current data from endpoint</a></br>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

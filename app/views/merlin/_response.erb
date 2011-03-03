@@ -1,0 +1,8 @@
+<merlin>
+  <action><%= @action %></action>
+  <result><%= @result %></result>
+  <message><%= @message %></message>
+  <% if @instance %>
+     <requestId><%= @instance.request_id %></requestId>
+  <% end %>	    
+</merlin>

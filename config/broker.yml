@@ -1,0 +1,11 @@
+production:
+  adapter: stomp
+
+development:
+  adapter: stomp
+  login: ""
+  passcode: ""
+  host: localhost
+  port: 61613
+  reliable: true
+  reconnectDelay: 5

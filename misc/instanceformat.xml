@@ -1,0 +1,20 @@
+<merlin>
+  <instanceList>
+    <instance>
+      <instanceid>id</instanceid>
+      <hostname>hostname</hostname>
+      <externalip>ipaddr</externalip>
+      <internalip>ipaddr</internalip>
+      <instancetype>type</instancetype>
+      <instancestatus>status</instancestatus>
+      <volumeList>
+        <volume>
+          <volumeid>id</volumeid>
+          <size>size</size>
+          <mountpoint>mp</mountpoint>
+          <volumestatus>status</volumestatus>
+        </volume>
+      </volumeList>
+    </instance>
+  </instanceList>
+</merlin>

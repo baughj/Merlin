@@ -1,0 +1,27 @@
+<html>
+  <head>
+    <title>InstanceTypes</title>
+  </head>
+  <body>
+    <p>
+      Here, you can create new user data scripts to be used in the creation of instances. User data scripts are interpreted as ERB, which means that 
+      ERB expressions are allowed. In particular, @instance is an object referring to the current instance which can be used inside the script.
+    </p>
+    <a href="/instance_types/new">Create a new user data script</a>
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+      <% InstanceType.all.each do |data| %>
+      <tr>
+        <td><%= data.name %></td>
+        <td><%= data.description %></td>
+        <td><a href="/instance_types/edit/<%= data.id %>">Edit</a> | <a href="/instance_types/delete/<%= data.id %>">Delete</a> </td>
+      </tr>
+      <% end %>
+    </table>
+  </body>
+</html>
+  

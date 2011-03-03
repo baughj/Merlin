@@ -1,0 +1,249 @@
+== Welcome to Merlin
+
+Merlin is a Ruby on Rails web application for managing and controlling EC2
+API-compatible clouds (Eucalyptus / AWS EC2). The primary goal of the project
+is to provide an EC2-like interface to Eucalyptus private clouds; however,
+compatibility with both is a primary goal (and EC2 functionality has been
+tested). Support is built-in for managing multiple clouds with different
+credentials, endpoints, etc.
+
+Merlin's main goal is to provide a flexible, "pretty" UI for managing private and
+public cloud resources, as well as providing highly usable Rails objects which
+can be used to interact with the cloud in any number of ways.
+
+Merlin also, as of this writing, provides services such as auto-provisioning
+(using Puppet), interfaces to more detailed object information (such as
+hostname, function, etc), automatic DNS updating (BIND and UltraDNS are
+currently supported) and more.
+
+Merlin also exposes a simple HTTP API that can be used by an instance to
+perform various functions (such as attach storage, introduce itself, etc).
+Merlin is intended to allow a systems administrator to quickly see what
+machines are in their cloud and what they are doing, along with giving the
+administrator the ability to quickly spin up new instances, get coffee,
+come back, and start using them.
+
+Eventually, it is my hope that Merlin will expand to have the functionality of
+many proprietary cloud management services (e.g. RightScale), and will allow a
+user to click a few times and create an entirely new cluster of instances with
+appropriate volumes / load balancers created. Work is ongoing to allow Merlin
+to use the F5 (http://www.f5.com) API to autoregister new webheads with a load
+balancer, and ELB support is also planned. This means that you will be able to
+launch new instances with Merlin with a few clicks; these instances will then
+launch, use Merlin and Puppet to autoprovision themselves, contact Merlin when
+they are ready to be used, and then can be automatically assigned to a load
+balancer.
+
+That's neither here nor there, however. As to what exists today...
+
+First, a warning: this is a very new wproject, and progress is ongoing. The
+views are simplistic and very ugly, but they work. You should know that this is
+my first Ruby project of any kind; this may show itself in the quality of the
+code, for which I humbly apologize. However, if you don't like it, you should
+send some patches. Obviously.
+
+== Currently Implemented Functionality
+
+Today, Merlin can:
+
+* Create new instances, possibly with provisioning
+
+Merlin can create new cloud instances, and if you use the default user data
+script (with some modifications, see "Provisioning & Merlin"), the instances
+will report back to Merlin when they are active, and after they finish
+provisioning (currently, only Puppet is supported, feel free to send patches
+for other systems). Each instance upon creation, is assigned an access token
+which can be used by that instance to call a number of API functions (see "API
+Functions"). These API functions are simplistic at the moment - simple GETs via
+HTTPS - and they allow the instance to indicate to Merlin that it is up and
+running, that it has finished provisioning, or that an error has occured which
+requires user intervention.
+
+* Automatically register new instances in DNS
+
+Merlin has support for updating BIND and UltraDNS DNS servers automatically.
+Once an instance introduces itself to Merlin using the "hello" API call, Merlin
+can immediately register either its private or public addresses with a DNS
+provider.
+
+* Create new volumes / auto-attach volumes
+
+Merlin can create new volumes, and attach them to instances. Also, if you use
+the default userdata functionality, upon startup, an instance can request that
+Merlin connect its storage. The user data script will then set up this storage
+according to your settings, formatting & mounting as necessary.
+
+* Create snapshots of volumes
+
+Basic functionality is supported for taking snapshots of volumes. There will be
+further support in the API for doing this programatically using the instance's
+access_token.
+
+* Regularly update Merlin's internal object state (Rails objects) from cloud state
+
+Merlin is intended to be able to poll clouds regularly, which will update
+Merlin's rails objects to mirror the following: key pairs, availability zones,
+instances, volumes, and snapshots. This allows you to "import" clouds, so that
+Merlin can work with existing setups.
+
+* Provides EC2 functionality to Rails objects
+
+Merlin provides a lot of neat functionality in its models, which can also make
+it very handy as the basis for more intelligent command line tools. Here are
+some examples:
+
+# Get an Amazon cloud
+ec2 = Cloud.find_by_name "Amazon EC2 (us-east)"
+
+# Discover all of our instances, volumes, etc
+ec2.update_from_api
+
+# Ask the cloud if a specific object exists
+
+ec2.object_exists? i-13371337
+
+# Which instances are on our cloud?
+ec2.instances.all
+
+# Which instances are in a specific availability zone on our cloud?
+AvailabilityZone.find_by_name('us-east-1a').instances.all
+
+# Create a new instance type, which we can then use as a template for new instances.
+
+it = InstanceType.new
+it.name = "My Ubuntu Lucid 10.04 Image"
+it.image_id = "ami-13371337"
+it.kernel_id = "aki-13371337"
+it.vm_type = cloud.vm_types.find_by_name('m1.small')
+it.bits = 64
+it.description = "My custom Ubuntu Lucid image."
+it.os = "Ubuntu Lucid 10.04"
+it.save
+
+# Run a new instance, using the instance type we just created.
+
+i = Instance.new
+i.cloud = Cloud.find_by_name 'Amazon EC2 (us-east)'
+i.hostname = 'foo-01.bar'
+i.instance_type = InstanceType.find_by_name_and_bits('My Ubuntu Lucid 10.04 Image', 64)
+i.key_pair = KeyPair.find_by_name('mycloudkey')
+i.security_group = SecurityGroup.find_by_name('default-security-group')
+i.user_data = Userdata.find_by_name('My Userdata Script')
+i.reserve
+
+# View our status and reservation
+
+i.reservation_id
+i.status_code
+i.status_message
+
+# Where was the new instance placed?
+i.availability_zone.name
+
+# Create a new EBS volume
+v = Volume.new
+v.size = 10
+v.availability_zone = i.availability_zone
+v.reserve
+
+# Create a new EBS volume from a snapshot
+v = Volume.new
+v.snapshot_id = "snap-13371337"
+v.availability_zone = i.availability_zone
+v.reserve
+
+# Attach a volume to an instance
+i.attach_volume v
+i.volumes
+i.volumes[0].attachment_status?
+i.volumes[0].attachment_status_message?
+i.volumes[0].attachment_device
+
+# Volumes know to which instance they are attached
+v.instance
+
+# Show all resources in an availability zone
+
+ec2 = Cloud.find_by_name('Amazon EC2 (us-east)')
+ec2.availability_zone.instances
+ec2.availability_zone.volumes
+
+== Sharp Edges
+
+Merlin is missing a lot of stuff: model validations, sanity checks, etc. All of
+this will be added. Merlin will definitely let you not only shoot yourself in
+the foot, but if you're a Eucalyptus user, and you give Merlin an admin
+account, it will also let you blow everyone else's foot away as well. You have
+been warned, be careful with it. There are no protections against doing
+unbelievably stupid things with Merlin....yet.
+
+== Immediate Plans
+
+Here are a list of items I am focusing on, in the immediate future:
+
+* Model/input validations & sanity checks
+
+  Yeah, I've got no excuse for this not already being there, but,
+  there it is.
+
+* Better UI
+
+  The UI is crap, honestly. This is because I was focusing on getting
+  the underlying functionality working and getting it released.
+
+* Management of security groups / keypairs
+
+  Currently, the only thing Merlin knows about security groups and keypairs are
+  their names; real management (creating a new key pair, importing a keypair,
+  adding/removing security group rules) is not implemented
+
+* F5 / Elastic Load Balancing management support
+
+  You'll be able to eventually manage F5's and ELBs via their respective APIs.
+  This will allow Merlin to auto-register new instances with their respective
+  load balancers.
+
+== Getting Started
+
+1. Download Merlin
+2. Install it somewhere
+3. Run db:migrate
+4. Run bundle
+4. Create a new cloud either via seeds or via the Merlin UI
+5. Create a default instance type
+6. Create a default userdata script
+7. Done!
+
+== Requirements
+
+* Gems
+
+  Gem requirements are detailed in the Gemfile.
+
+* Message Server
+
+  Merlin requires a STOMP-compatible message broker, and the ActiveMessaging
+  library (included). I recommend ActiveMQ: http://activemq.apache.org. Setting up and
+  running ActiveMQ is as easy as running bin/activemq from an unpacked tarball.
+
+  Configuration is in config/broker.yml.dist, and should have sane defaults
+  which will let you get started easily, assuming AMQ is on the local machine.
+
+* script/poller
+
+  The poller script, for ActiveMessaging processors, needs to be running
+  whenever Merlin is.
+
+== Copyright / Licensing Information
+
+Merlin - the only limit is the sky
+Copyright (C) 2011 Justin Baugh, <baughj@discordians.net>
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.

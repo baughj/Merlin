@@ -1,0 +1,17 @@
+Greetings from the Merlin system.
+
+The <%= @newinst.instance_type %> instance you requested has been 
+successfully instantiated by the cloud API.
+
+However, as of this message, the instance does not yet seem to have
+completed a provisioning cycle by Puppet.
+
+You can SSH to <%= @newinst.external_ip %> using the API-registered
+public key to diagnose what's wrong.
+ 
+Summary
+-------
+
+Hostname:	   <%= @newinst.hostname %>
+Public IP address: <%= @newinst.external_ip %>
+

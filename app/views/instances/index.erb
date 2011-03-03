@@ -1,0 +1,26 @@
+<html>
+  <head>
+    <title>Instances</title>
+  </head>
+  <body>
+    <p>
+      List of instances.
+    </p>
+    <a href="/userdata/create">Launch a new instance</a>
+    <table>
+      <tr>
+        <th>Instance ID</th>
+        <th>Hostname </th>
+        <th>Status</th>
+      </tr>
+      <% Instance.all.each do |instance| %>
+      <tr>
+        <td><%= instance.instance_id %></td>
+        <td><%= instance.hostname %></td>
+        <td><%= instance.status_message %></td>
+      </tr>
+      <% end %>
+    </table>
+  </body>
+</html>
+  

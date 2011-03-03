@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <%= formtastic_stylesheet_link_tag %>
+    <title>UserData</title>
+  </head>
+  <body>
+    <p>
+      Here, you can create new user data scripts to be used in the creation of instances. User data scripts are interpreted as ERB, which means that 
+      ERB expressions are allowed. In particular, @instance is an object referring to the current instance which can be used inside the script.
+    </p>
+    <% semantic_form_for @userdata do |form| %>
+      <% form.inputs do %>
+        <%= form.input :name, :label => "Script Name", :hint => "A name for this script", :required => true %>
+        <%= form.input :description, :label => "Description", :hint => "A brief description of the script", :required => false %>
+        <%= form.input :script, :label => "Script Contents", :hint => "The script itself", :required => true %>
+      <% end %>
+      <% form.buttons do %>
+        <%= form.commit_button "Save" %>
+      <% end %>
+    <% end %>
+    </table>
+  </body>
+</html>
+  

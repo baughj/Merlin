@@ -1,0 +1,4 @@
+<% if !params[:no_default] %>
+  <option value="">default</option>
+<% end %>
+<%= options_from_collection_for_select(AvailabilityZone.find_all_by_cloud_id(params[:cloud_id]), "id", "name") %>

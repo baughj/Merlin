@@ -1,0 +1,169 @@
+# This is hardcoded, because it doesn't seem possible to retrieve this information
+# programatically.
+#
+# If you are using Eucalyptus, you'll want to edit all the *_euca entries to match
+# what you've defined in the Eucalyptus admin interface. This isn't critical, but it
+# will probably confuse users if the values aren't the same. These values are not used for
+# anything important; they are merely for informational purposes.
+#
+# The AWS instance types are current as of 2010.02.16. 
+#
+# Memory, CPU units, and disk are all expressed as GB, float, to 
+# accomodate things like "7.5GB" from AWS.
+#
+
+m1_small_euca:
+  id: 1
+  cloud_type_id: 2
+  name: m1.small
+  description: m1.small (Eucalyptus)
+  cpu_units: 1.0
+  memory: 1.0
+  disk: 10.0
+
+c1_medium_euca:
+  id: 2
+  cloud_type_id: 2
+  name: c1.medium
+  description: c1.medium (Eucalyptus)
+  cpu_units: 1.0
+  memory: 2.0
+  disk: 10.0
+
+m1_large_euca:
+  id: 3
+  cloud_type_id: 2
+  name: m1.large
+  description: m1.large (Eucalyptus)
+  cpu_units: 1.0
+  memory: 4.0
+  disk: 10.0
+
+m1_xlarge_euca:
+  id: 4
+  cloud_type_id: 2
+  name: m1.xlarge
+  description: m1.xlarge (Eucalyptus)
+  cpu_units: 2.0
+  memory: 8.0
+  disk: 20.0
+
+c1_xlarge_euca:
+  id: 5
+  cloud_type_id: 2
+  name: c1.xlarge
+  description: c1.xlarge (Eucalyptus)
+  cpu_units: 4.0
+  memory: 16.0
+  disk: 20.0
+
+m1_small_aws:
+  id: 6
+  cloud_type_id: 1
+  name: m1.small
+  description: m1.small (AWS)
+  cpu_units: 1.0
+  memory: 1.7
+  disk: 160.0
+  bits: 32
+
+m1_large_aws:
+  id: 7
+  cloud_type_id: 1
+  name: m1.large
+  description: m1.large (AWS)
+  cpu_units: 4.0
+  memory: 7.5
+  disk: 850.0
+  bits: 64
+
+m1_xlarge_aws:
+  id: 8
+  cloud_type_id: 1
+  name: m1.xlarge
+  description: m1.xlarge (AWS)
+  cpu_units: 8.0
+  memory: 15.0
+  disk: 1690.0
+  bits: 64
+
+t1_micro_aws:
+  id: 9
+  cloud_type_id: 1
+  name: t1.micro
+  description: t1.micro (AWS)
+  cpu_units: 1.0
+  memory: 0.59
+  disk: 0.0
+  bits: 0
+
+m2_xlarge_aws:
+  id: 10
+  cloud_type_id: 1
+  name: m2.xlarge
+  description: m2.xlarge (AWS)
+  cpu_units: 6.5
+  memory: 17.1
+  disk: 420.0
+  bits: 64
+
+m2_2xlarge_aws:
+  id: 11
+  cloud_type_id: 1
+  name: m2.2xlarge
+  description: m2.2xlarge (AWS)
+  cpu_units: 13.0
+  memory: 34.2
+  disk: 850.0
+  bits: 64
+
+m2_4xlarge_aws:
+  id: 12
+  cloud_type_id: 1
+  name: m2.4xlarge
+  description: m2.4xlarge (AWS)
+  cpu_units: 26.0
+  memory: 68.4
+  disk: 1690.0
+  bits: 64
+
+c1_medium_aws:
+  id: 13
+  cloud_type_id: 1
+  name: c1.medium
+  description: c1.medium (AWS)
+  cpu_units: 5.0
+  memory: 1.7
+  disk: 350.0
+  bits: 32
+
+c1_xlarge_aws:
+  id: 14
+  cloud_type_id: 1
+  name: c1.xlarge
+  description: c1.xlarge (AWS)
+  cpu_units: 20.0
+  memory: 7.0
+  disk: 1690.0
+  bits: 64
+
+cc1_4xlarge_aws:
+  id: 15
+  cloud_type_id: 1
+  name: cc1.4xlarge
+  description: cc1.4xlarge (AWS)
+  cpu_units: 33.5
+  memory: 23
+  disk: 1690.0
+  bits: 64
+
+cg1_4xlarge_aws:
+  id: 16
+  cloud_type_id: 1
+  name: cg1.4xlarge
+  description: cg1.4xlarge (AWS)
+  cpu_units: 33.5
+  memory: 22
+  disk: 1690.0
+  bits: 64
+

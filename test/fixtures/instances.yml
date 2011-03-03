@@ -1,0 +1,15 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+
+one:
+  id: MyString
+  external_ip: MyString
+  private_ip: MyString
+  hostname: MyString
+  request_id: MyString
+
+two:
+  id: MyString
+  external_ip: MyString
+  private_ip: MyString
+  hostname: MyString
+  request_id: MyString

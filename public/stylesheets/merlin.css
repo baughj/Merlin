@@ -1,0 +1,44 @@
+body {
+  font-family: sans-serif;
+}
+
+td {
+  font: 0.75em sans-serif; 
+}
+
+#bar {
+  padding: 5px 10px 5px 10px;
+  color: #eee;
+  font: 0.90em sans-serif;
+}
+
+.bar_left {
+  float: left;
+  width: 45%;
+}
+
+.bar_right {
+  float: right;
+  width: 45%;
+  text-align: right;
+}
+
+.header {
+  margin-bottom: 15px;
+}
+
+.container {
+  margin-top: 25px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 60%;
+}
+
+#example {
+  width: 100%;
+}
+
+.center {
+  margin-left: auto;
+  margin-right: auto;
+}

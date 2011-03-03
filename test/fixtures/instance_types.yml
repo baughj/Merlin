@@ -1,0 +1,19 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+
+one:
+  ami_id: MyString
+  aki_id: MyString
+  size: MyString
+  bits: 
+  description: MyString
+  region: MyString
+  root_store: MyString
+
+two:
+  ami_id: MyString
+  aki_id: MyString
+  size: MyString
+  bits: 
+  description: MyString
+  region: MyString
+  root_store: MyString

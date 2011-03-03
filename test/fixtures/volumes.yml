@@ -1,0 +1,15 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+
+one:
+  ebs_id: MyString
+  size: 1
+  instance_id: 1
+  mount_point: MyString
+  active: false
+
+two:
+  ebs_id: MyString
+  size: 1
+  instance_id: 1
+  mount_point: MyString
+  active: false

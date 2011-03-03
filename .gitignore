@@ -1,0 +1,11 @@
+config/database.yml
+log/*
+db/*.sqlite3
+*~
+\#*
+.\#*
+tmp/
+bootstrap.sql
+db/fixtures/clouds.yml
+db/fixtures/instance_types.yml
+

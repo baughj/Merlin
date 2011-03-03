@@ -1,0 +1,105 @@
+#!/bin/bash
+#
+# This file is part of Merlin, an EC2 API-compatible cloud
+# computing frontend.
+#
+# Copyright (C) 2010, Justin Baugh <baughj@discordians.net>
+#
+# Merlin is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+HOSTNAME='<%= hostname %>'
+MERLIN_API_ENDPOINT='https://merlin.nym.tld/'
+ACCESS_TOKEN='<%= access_token %>'
+INSTANCE_ID='<%= instance_id %>'
+
+# First, a sanity check...
+REPORTED_ID=`wget http://169.254.169.254/latest/meta-data/instance-id -q -O -`
+
+if [ "$INSTANCE_ID" != "$REPORTED_ID" ]; then
+    wget "https://$MERLIN_API_ENDPOINT/instance/$ID/intervene&access_token=$ACCESS_TOKEN&condition=idmismatch" 
+    echo "ERROR: My instance ID should be $INSTANCE_ID but is reported as $REPORTED_ID...?"
+    exit -1
+fi
+
+set -e -x
+mkdir -p /var/log/tld
+exec > /var/log/tld/startup.log
+exec 2>&1
+
+export DEBIAN_FRONTEND=noninteractive
+
+shadowconfig on
+
+echo '127.0.0.1 localhost' > /etc/hosts
+echo '10.0.8.10 puppet.nym.tld puppet' >> /etc/hosts
+
+echo $HOSTNAME > /etc/hostname
+hostname -F /etc/hostname
+
+# Introduce ourselves to Merlin, or notify it that we're alive
+wget "https://$MERLIN_API_ENDPOINT/instance/$ID/hello?hostname=$HOSTNAME&accesstoken=$ACCESS_TOKEN" -O /var/log/tld/hello.log
+
+# Ask Merlin to attach any additional storage that has been provisioned
+wget "https://$MERLIN_API_ENDPOINT/instance/$ID/attach_storage&accesstoken=$ACCESS_TOKEN" -O /var/log/tld/attachstorage.log
+
+<% if volume.length >= 2 %>
+echo "Additional volumes were requested."
+  <% for vol in volume %>
+    # Really, really make sure we never run mkfs on a root device
+    <% if not vol.root %>
+      echo "Initializing volume <%= vol.device %>, mount point <%= vol.mount_point %>"
+      # One F will force mkfs to make a filesystem on an entire block device; this option won't
+      # overwrite existing filesystems.
+      mkfs -F -t <%= vol.fs %> <%= vol.device %>
+      mkdir -p <%= vol.mount_point %>
+      mount <%= vol.device %> <%= vol.mount_point %>
+    <% else %>
+    echo "Not dealing with volume <%= vol.device %>, mount point <%= vol.mount_point %> - flagged as root device"
+    <% end %>
+  <% end %>
+<% end %>
+
+echo "Starting puppet..."
+puppetd --onetime --verbose --waitforcert 5 &
+PUPPET_PID=$!
+echo $PUPPET_PID > /var/log/tld/puppet.pid
+sleep 5
+
+wget "https://$MERLIN_API_ENDPOINT/instance/$ID/sign_key&access_token=$ACCESS_TOKEN" -O /var/log/tld/signkey.log
+
+# We will wait a maximum of ten minutes for puppet to finish, then we assume
+# something is amiss
+
+TIMEOUT=600
+count=0
+
+while ((count < TIMEOUT )); do
+    eval '[ ! -d "proc/$PUPPET_PID" ] && ((count = TIMEOUT))'
+    ((count++))
+    sleep 1
+done
+
+if [ -d "proc/$PUPPET_PID" ];
+then
+    wget "https://$MERLIN_API_ENDPOINT/instance/$ID/intervene&access_token=$ACCESS_TOKEN&condition=puppetlongrunning" 
+else
+    wget "https://$MERLIN_API_ENDPOINT/instance/$ID/complete&access_token=$ACCESS_TOKEN"
+fi
+
+echo "Provisioning complete!"
+
+# Start up puppetd for real now
+
+/etc/init.d/puppet start
