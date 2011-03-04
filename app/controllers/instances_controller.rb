@@ -106,7 +106,7 @@ class InstancesController < ApplicationController
 
   def current_objects(params={})
     current_page = (params[:iDisplayStart].to_i/params[:iDisplayLength].to_i rescue 0)+1
-    @current_objects = Instance.paginate :page => current_page, :include => [:vm_type, :security_group, :key_pair],
+    @current_objects = Instance.paginate :page => current_page, :include => [:vm_type, :security_groups, :key_pair],
     :order => "#{datatable_columns(params[:iSortCol_0])} #{params[:sSortDir_0] || "DESC"}",
     :conditions => conditions,
     :per_page => params[:iDisplayLength]
@@ -129,7 +129,7 @@ class InstancesController < ApplicationController
     when 4
       return "security_groups.name"
     when 5
-      return "key_pair.name"
+      return "key_pairs.name"
     when 6
       return "instances.status_message"
     else

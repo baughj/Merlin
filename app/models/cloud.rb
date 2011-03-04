@@ -73,14 +73,12 @@ class Cloud < ActiveRecord::Base
   def object_exists?(object_id)
     prefix, id = object_id.split('-')
     prefix = prefix.downcase
-    puts "debug: prefix is #{prefix}"
     if not ObjectQueryInfo.keys.include? prefix
       return nil
     else
       if cloud_type.aws?
         f = api_request(ObjectQueryInfo[prefix].api_call, false, 
                            ObjectQueryInfo[prefix].api_arg.to_sym => object_id)
-        pp(f)
         return !f.nil?
       elsif cloud_type.eucalyptus?
         # This code for Eucalyptus needs to either cache and/or do this more intelligently, otherwise
@@ -154,14 +152,23 @@ class Cloud < ActiveRecord::Base
     @connector.describe_instances.reservationSet.item.each do |reservationSet|
       # Each reservation set, remember, can have multiple instances
       reservationSet.instancesSet.item.each do |instance|
-          i = Instance.find_by_instance_id(instance.instanceId)
+        i = Instance.find_by_instance_id(instance.instanceId)
         if i.nil?
-          i = Instance.find_or_create_by_instance_id(instance.instanceId)
+          i = Instance.new(:instance_id => instance.instanceId)
           i.status_code = Instance::STATUS['running']
           i.status_message = "API refresh discovered new instance"
           i.cloud = self
-          i.update_properties(instance)
         end
+        i.update_properties(instance)
+        # Set a few things that aren't simple assignments, this should be abstracted eventually
+        logger.debug("instance #{instance.instanceId} has secgroup(s) #{reservationSet.groupSet.item.inspect}, vmType #{instance.instanceType}, keyPair #{instance.keyName}")
+        i.vm_type = VmType.find_by_name_and_cloud_type_id(instance['instanceType'], self.cloud_type)
+        i.key_pair = KeyPair.find_by_name_and_cloud_id(instance['keyName'], self)
+        reservationSet.groupSet.item.each do |secgroup|
+          i.security_groups.push(SecurityGroup.find_by_name_and_cloud_id(secgroup.groupId,
+                                                                         self))
+        end
+        i.save
       end
     end
 

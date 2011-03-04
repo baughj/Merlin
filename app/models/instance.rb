@@ -29,7 +29,7 @@ class Instance < ActiveRecord::Base
   belongs_to :availability_zone
   belongs_to :cloud
   has_many :volume
-  has_and_belongs_to_many :security_group
+  has_and_belongs_to_many :security_groups
   belongs_to :instance_type
   belongs_to :vm_type
   belongs_to :userdata
@@ -171,10 +171,6 @@ class Instance < ActiveRecord::Base
   def update_from_api(update_volumes=true)
     # Update our local information on an instance from the API.
 
-    # Need to check this: we need to be sure we are collecting request_id, reservation_id,
-    # vm_type_id, instance_type_id, dnsName, privateDnsName, blockDeviceMapping, rootDeviceName,
-    # rootDeviceType, monitoring, instanceType, instanceState.name, ownerId
-
     if instance_id.nil?
       logger.error("API update requested on instance that does not have a cloud ID!")
       return false
@@ -183,16 +179,23 @@ class Instance < ActiveRecord::Base
     api_info = cloud.api_request(:describe_instances, false, :instance_id => instance_id)
     rset = api_info.reservationSet.item
     i_info = nil
+    r_info = nil
 
     if rset.length > 0
-      # Cloud doesn't support filtering (Euca), so we have to do this the hard way
+      # There's more than one reservationSet, which means the cloud doesn't
+      # support filtering (Euca), so we have to do this the hard way. We'll try
+      # to find the instance via its reservation_id if we have it on hand,
+      # otherwise, we have to go trawling.
       if !i.reservation_id.nil?
-        i_info = rset.select {|i| i['reservationId'] == i.reservation_id}[0]
-      elsif i_info.nil?
-        # We either don't have the reservation_id or the instance cannot be located by it,
-        # so now we look for the instance ID itself
-        i_info = rset.map {|i| i.instancesSet.item[0]}.select {|j| j.instanceId == instance_id}[0]
-        if i_info.nil?
+        r_info = rset.select {|i| i['reservationId'] == i.reservation_id}[0]
+      elsif r_info.nil?
+        # We either don't have the reservation_id or the instance cannot be
+        # located by it (should never happen), so now we look for the instance
+        # ID itself within the return.
+        r_info = rset.select { |k| 
+          k.instancesSet.item.select { |j| 
+            j.instanceId == instance_id}.length > 0 }
+        if r_info.nil?
           logger.error("API couldn't locate instance information for reservation #{reservation_id}, instance #{instance_id}...? Marking as ghost!")
           status_code = STATUS['ghost']
           status_message = "Marked as ghost, API returned no information about #{reservation_id} or instance #{instance_id}"
@@ -200,11 +203,33 @@ class Instance < ActiveRecord::Base
         end
       end
     else
-      i_info = api_info.reservationSet.item[0]
+      # The exact reservation was returned
+      r_info = api_info.reservationSet.item[0]
     end
+    
+    # On the off chance that we find nothing..
+    
+    if r_info.nil?
+      return false
+    end
+    # Now that we've found the reservation, we need to find the instance inside
+    # of it, but we first get our security group information from the
+    # reservation
 
+    r_info.groupSet.item.each do |secgroup|
+      i.security_group.push(SecurityGroup.find_or_create_by_name_and_cloud_id(secgroup.groupId,
+                                                                              cloud))
+    end
+    
+    # Now grab the instance we're actually looking for
+    i_info = r_info.instancesSet.item.select { |i| i.instanceId == instance_id }
+    
     self.update_properties(i_info)
-
+    
+    # Set a few things that aren't simple assignments, this should be abstracted eventually
+    self.vm_type = VmType.find_by_name_and_cloud_type_id(i_info['instanceType'], cloud.cloud_type)
+    self.key_pair = KeyPair.find_by_name_and_cloud_id(i_info['keyName'], cloud)
+    
     if update_volumes
       if cloud.cloud_type.aws? then
         v_info = cloud.api_request(:describe_volumes_with_filter, false,
@@ -239,14 +264,12 @@ class Instance < ActiveRecord::Base
         end
       end
     end
-
     self.needs_api_update = false
     self.save
     return true
-
   end
 
-  def reserve
+    def reserve
     if !instance_id.nil?
       logger.error("Instance #{instance_id} requested reservation, but already has a cloud instance ID. Aborting.")
       return false

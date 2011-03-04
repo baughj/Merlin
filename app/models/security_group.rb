@@ -22,7 +22,7 @@
 
 class SecurityGroup < ActiveRecord::Base
 
-  has_and_belongs_to_many :instance
+  has_and_belongs_to_many :instances
   belongs_to :cloud
 
   def name_with_owner

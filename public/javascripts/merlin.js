@@ -108,10 +108,13 @@ $(document).ready(function() {
         "sAjaxSource": "/instances.json",
         "aoColumns" : [
             { "sClass": "center", "bSortable": true },
-            { "sClass": "center", "bSortable": false },
-            { "sClass": "center", "bSortable": true},
+            { "sClass": "center", "bSortable": true },
             { "sClass": "center", "bSortable": false},
+            { "sClass": "center", "bSortable": true},
+            { "sClass": "center", "bSortable": true},
+            { "sClass": "center", "bSortable": true},
             { "sClass": "center", "bSortable": false}
+
         ],
 
         "fnServerData": fnDataTablesPipeline
