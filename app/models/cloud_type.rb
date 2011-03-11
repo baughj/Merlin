@@ -23,21 +23,22 @@
 class CloudType < ActiveRecord::Base
   has_many :cloud
   has_many :vm_type
-  
+
+  def paravirtualized?
+    # Yes for AWS and Xen+Eucalyptus, no for KVM+Eucalyptus
+    return paravirtualized
+  end
+
   def eucalyptus?
-    if name == 'eucalyptus'
-      return true
-    else
-      return false
-    end
+    return name == 'eucalyptus'
   end
 
   def aws?
-    if name == 'aws'
-      return true
-    else
-      return false
-    end
+    return name == 'aws'
+  end
+
+  def multiple_volumes?
+    return support_multiple_ebs_volumes
   end
 
 end

@@ -1,0 +1,1 @@
+<%= options_from_collection_for_select(Volume.find_all_by_availability_zone_id(params[:availability_zone_id]), "id", "pretty_print") %>

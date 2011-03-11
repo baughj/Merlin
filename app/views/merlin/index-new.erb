@@ -3,10 +3,12 @@
     <title>Merlin</title>
     <%= stylesheet_link_tag "redmond/jquery-ui-1.8.10.custom.css" %>
     <%= stylesheet_link_tag "merlin" %>
+    <%= stylesheet_link_tag "datatables" %>
     <%= javascript_include_tag "jquery/jquery-1.4.4.min" %>
     <%= javascript_include_tag "jquery/jquery-ui-1.8.10.custom.min" %>
     <%= javascript_include_tag "jquery/jquery.dataTables.min.js" %>
     <%= javascript_include_tag "merlin" %>
+
   </head>
   <body>
     <div class="header">
@@ -18,7 +20,7 @@
         <select name="cloudselect">
           <%= options_from_collection_for_select(Cloud.all, :id, :name) %>
         </select> Quick Links:
-        <a href="new">new cloud</a> | <a href="new instance">new instance</a> | <a href="new volume">new volume</a>
+        <a href="/clouds/new">new cloud</a> | <a href="/instances/new">new instance</a> | <a href="/volumes/new">new volume</a> | <a href="/instance_types">manage instance types</a> | <a href="/userdatas">manage userdata</a>
       </div>
       <div class="bar_right">
         Merlin 0.0.1

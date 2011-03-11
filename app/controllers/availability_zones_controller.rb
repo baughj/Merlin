@@ -20,16 +20,9 @@
 # If not, see <http://www.gnu.org/licenses/>.
 #
 
-class CloudAddedProcessor < ApplicationProcessor
+class AvailabilityZonesController < ApplicationController
 
-  subscribes_to :cloud_added
-
-  def on_message(message)
-    logger.info("Received request to add new cloud")
-    cloud = Cloud.new(message)
-    cloud.status = "Updating information from endpoint"
-    cloud.ready = false
-    cloud.save
-    cloud.trigger_endpoint_update
+  def get_volumes_select
   end
+
 end

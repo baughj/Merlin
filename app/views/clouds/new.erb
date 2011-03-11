@@ -1,0 +1,23 @@
+<html>
+  <head>
+    <%= javascript_include_tag "prototype" %>
+    <%= formtastic_stylesheet_link_tag %>
+  </head>
+  <body>
+
+    <% semantic_form_for @cloud do |form| %>
+    <% form.inputs "Basic Information", :id => "basic" do %>
+    <%= form.input :name, :label => "Cloud Name", :hint => "Descriptive name for this cloud", :required => true %>
+    <%= form.input :api_url, :label => "API Endpoint URL", :hint => "http://foo.bar/services/Eucalyptus", :required => true %> 
+    <%= form.input :api_usessl, :label => "Use SSL", :default => true, :required => false %>
+    <%= form.input :query_key, :label => "API Query Key", :hint => "The query key to be used for API authentication", :required => true %>
+    <%= form.input :query_key_id, :label => "API Query Key ID", :hint => "The query key ID to be used for API authentication", :required => true %> 
+    <% end %>
+    <% form.inputs :name => "Puppet Options", :id => "advanced" do %>
+    <%= form.input :puppet_server, :label => "Puppet Server", :hint => "The hostname of the puppet server (must be accessible from within the cloud)", :required => false %>
+    <%= form.input :puppet_port, :label => "Puppet Port", :hint => "The port used to communicate with Puppet. If left blank, the default is used.", :required => false %>
+    <% end %>
+    <%= form.buttons %>
+    <% end %>
+  </body>
+</html>

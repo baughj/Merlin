@@ -1,0 +1,6 @@
+Request:        <%= request.env['REQUEST_PATH'] %><% if flash[:error] %>
+Result:         FAILURE
+Details:        <%= flash[:error] %><% else %>
+Result:         SUCCESS<% if flash[:notice] %>
+Details:        <%= flash[:notice] %><% end %>
+<% end %>

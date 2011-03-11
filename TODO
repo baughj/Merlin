@@ -1,0 +1,23 @@
+List of things I'd like to get done soon (2-4 weeks):
+
+ * Model validators! Remove all the old cruft (there's still a lot)
+ * Refactor: api_request (remove xml stuff which is from pre-release cruft)
+ * Refactor: Fix pluralization of models/etc where needed, make sure everything
+   is Rails-like
+ * DNS updates with BIND/etc should work correctly
+ * Make sure the following workflow is fully implemented, to start:
+   + Create instance using Merlin with associated volume(s)
+   + Userdata script works for all cases (hello, attach_storage,
+     completed, intervene)
+ * Release a real version (and then start using actual migrations)
+
+Things I'd like to do over the course of a few months (2-4 mo):
+
+ * Stop using AM/ActiveMQ and use Redis/Resque
+ * Closer puppet integration (Facter/API stuff)
+ * Unit tests!
+ * Snapshot implementation
+
+Things it would be great if other people could pick up:
+
+ * AJAX/general UI work

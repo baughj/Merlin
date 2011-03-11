@@ -8,4 +8,4 @@ tmp/
 bootstrap.sql
 db/fixtures/clouds.yml
 db/fixtures/instance_types.yml
-
+public/files/site-userdata.erb

@@ -39,12 +39,12 @@ ActionController::Routing::Routes.draw do |map|
   # Note: These default routes make all actions in every controller accessible via GET requests. You should
   # consider removing the them or commenting them out if you're using named routes and resources.
 
-  map.connect 'api/instance/:action', :controller => "instance"
-  map.connect 'api/instance/:id/:action', :controller => "Instance"
-  map.connect "merlin/:action", :controller => "Merlin"
+  map.connect 'instances/:id/:action', :controller => "Instances"
   map.connect 'clouds/:action', :controller => "clouds"
+  map.connect 'availability_zones/:action', :controller => "AvailabilityZones"
   map.resources :clouds
   map.resources :userdatas
   map.resources :instance_types
   map.resources :instances
+  map.resources :availability_zones
 end

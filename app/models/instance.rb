@@ -29,11 +29,15 @@ class Instance < ActiveRecord::Base
   belongs_to :availability_zone
   belongs_to :cloud
   has_many :volume
+  has_and_belongs_to_many :volume_type
   has_and_belongs_to_many :security_groups
   belongs_to :instance_type
   belongs_to :vm_type
   belongs_to :userdata
   belongs_to :key_pair
+
+  accepts_nested_attributes_for :volume, :allow_destroy => false
+  accepts_nested_attributes_for :volume_type, :allow_destroy => false
 
   # Define some status constants. We combine a bunch of different Merlin-specific states
   # with the typical EC2 states. 
@@ -72,10 +76,10 @@ class Instance < ActiveRecord::Base
     'pending' => 0,
     'requested' => 1,
     'reserved' => 2,
-    'provisioning' => 5,
-    'provisioned' => 6,
-    'active' => 7,
-    'ghost' => 9,
+    'provisioning' => 3,
+    'provisioned' => 4,
+    'active' => 5,
+    'ghost' => 6,
     'running' => 16,
     'shutting-down' => 32,
     'terminated' => 48,
@@ -89,6 +93,21 @@ class Instance < ActiveRecord::Base
   ENDPOINT_UPDATE = ['instanceId', 'kernelId', 'ImageId', 'ramdiskId', 'launchTime', 'privateDnsName', 'dnsName',
                      'privateIpAddress', 'ipAddress', 'rootDeviceName', 'rootDeviceType',
                      'ownerId', 'architecture', 'virtualizationType', 'reason']
+
+  def running?
+    # According to Merlin, is the instance running?
+    return [STATUS['active'], STATUS['provisioning'], STATUS['provisioned'],
+            STATUS['running']].include? status_code
+  end
+
+  def stopped?
+    return [STATUS['terminated'], STATUS['stopping'], STATUS['stopped']].include? status_code
+  end
+
+  def pending?
+    return [STATUS['pending'], STATUS['requested'], STATUS['reserved']].include? status_code
+  end
+
 
   def exists?
     # Has the instance been invoked (assigned a cloud instance ID, e.g. i-13371337)?
@@ -113,17 +132,9 @@ class Instance < ActiveRecord::Base
       self.save
     rescue Exception => exc
       @userdata_error = "Error processing userdata: #{exc}"
-      return nil
+      return false
     end
-  end
-
-  def running?
-  end
-
-  def stopped?
-  end
-
-  def pending?
+    return true
   end
 
   def update_dns
@@ -181,14 +192,14 @@ class Instance < ActiveRecord::Base
     i_info = nil
     r_info = nil
 
-    if rset.length > 0
+    if rset.length > 1
       # There's more than one reservationSet, which means the cloud doesn't
       # support filtering (Euca), so we have to do this the hard way. We'll try
       # to find the instance via its reservation_id if we have it on hand,
       # otherwise, we have to go trawling.
-      if !i.reservation_id.nil?
+      if !reservation_id.nil?
         r_info = rset.select {|i| i['reservationId'] == i.reservation_id}[0]
-      elsif r_info.nil?
+      else
         # We either don't have the reservation_id or the instance cannot be
         # located by it (should never happen), so now we look for the instance
         # ID itself within the return.
@@ -210,26 +221,28 @@ class Instance < ActiveRecord::Base
     # On the off chance that we find nothing..
     
     if r_info.nil?
+      logger.error("...Didn't find reservation #{reservation_id}?")
       return false
     end
+
     # Now that we've found the reservation, we need to find the instance inside
     # of it, but we first get our security group information from the
     # reservation
 
     r_info.groupSet.item.each do |secgroup|
-      i.security_group.push(SecurityGroup.find_or_create_by_name_and_cloud_id(secgroup.groupId,
+      security_groups.push(SecurityGroup.find_or_create_by_name_and_cloud_id(secgroup.groupId,
                                                                               cloud))
     end
-    
+
     # Now grab the instance we're actually looking for
-    i_info = r_info.instancesSet.item.select { |i| i.instanceId == instance_id }
-    
+    i_info = r_info.instancesSet.item.select { |i| i.instanceId == instance_id }[0]
+
     self.update_properties(i_info)
-    
+
     # Set a few things that aren't simple assignments, this should be abstracted eventually
     self.vm_type = VmType.find_by_name_and_cloud_type_id(i_info['instanceType'], cloud.cloud_type)
     self.key_pair = KeyPair.find_by_name_and_cloud_id(i_info['keyName'], cloud)
-    
+
     if update_volumes
       if cloud.cloud_type.aws? then
         v_info = cloud.api_request(:describe_volumes_with_filter, false,
@@ -243,9 +256,10 @@ class Instance < ActiveRecord::Base
         # If the version is the latest, blockDeviceMapping is returned for the instance.
         # Else, you have to wade through the full output of describeVolumes.
         if i_info.blockDeviceMapping.nil?
-          a_info = cloud.api_request(:describe_volumes, 
+          logger.debug("API endpoint doesn't return blockDeviceMapping")
+          a_info = cloud.api_request(:describe_volumes,
                                      false).volumeSet.item.select {
-            |a| !a.attachmentSet.nil?}.map{ 
+            |a| !a.attachmentSet.nil? }.map{
             |b| b.attachmentSet.item }
           # a_info is an array of attachmentSet items
           a_info.each do |attachment|
@@ -253,13 +267,16 @@ class Instance < ActiveRecord::Base
             vol.update_from_api
           end
         else
-          i_info.blockDeviceMapping.item.each do |mapping|
-            # Ignore instance storage or non-standard Euca returns, we are ONLY interested in
-            # knowing what EBS volumes are attached to the instance
-            if !mapping.ebs.nil?
-              vol = Volume.find_or_create_by_volume_id(mapping.ebs.volumeId)
-              vol.update_from_api
-            end
+          # Combine two arrays of volumeIds: ones reported by the API, and
+          # the ones that Merlin thinks are associated with the instance. Then,
+          # trigger updates for all of them.
+          logger.debug("Using blockDeviceMapping")
+          (i_info.blockDeviceMapping.item.select {
+            |k| k.has_key? 'ebs' }.map { 
+            |e| e.ebs.volumeId } | 
+            volume.map { |v| v.volume_id }).each do |v|
+            vol = Volume.find_or_create_by_volume_id(v)
+            vol.update_from_api
           end
         end
       end
@@ -269,53 +286,44 @@ class Instance < ActiveRecord::Base
     return true
   end
 
-    def reserve
+  def reserve
     if !instance_id.nil?
       logger.error("Instance #{instance_id} requested reservation, but already has a cloud instance ID. Aborting.")
       return false
     end
-    
-    if status_code != 1 and status_code != -1 then
+
+    if status_code != 1 and status_code != -1 and !status_code.nil? then
       logger.error("Reserve requested for instance that is not waiting for reservation status (or in an error state). Aborting.")
       return false
     end
-    
+
     generate_access_token
     generate_userdata
-    
+
     if raw_userdata.nil? then
       self.status_code = STATUS['error']
       self.status_message = @userdata_error
       self.save
       return false
     end
-    
-    
+
     logger.info("Requesting creation of instance (#{instance_type.vm_type.name}, image #{image_id})")
-    
+
     run_instance_options ={
-      :key_name => key_pair.name,
+      :key_name => key_pair.nil? ? '' : key_pair.name,
       :user_data => raw_userdata,
-      :instance_type => instance_type.vm_type.name,
-      :availability_zone => availability_zone.name
+      :instance_type => instance_type.nil? ? vm_type : instance_type.vm_type.name,
+      :availability_zone => availability_zone.nil? ? '' : availability_zone.name,
+      :security_group => cloud.cloud_type.support_multiple_sec_groups ? security_groups.map { 
+        |sg| sg.name } : 
+      security_groups[0].name,
+      :image_id => image_id.nil? ? instance_type.image_id : image_id
     }
-    
-    if cloud.cloud_type.support_multiple_sec_groups then
-      run_instance_options.merge! :security_group => security_group.map { |sg| sg.name }
-    else
-      run_instance_options.merge! :security_group => security_group[0].name
-    end
-    
-    if image_id then
-      run_instance_options.merge! :image_id => image_id
-    else
-      run_instance_options.merge! :image_id => instance_type.image_id
-    end
-    
+
     logger.debug("Calling run_instance with parameters: #{run_instance_options.inspect}")
-    
+
     r = cloud.api_request(:run_instances, false, run_instance_options)
-    
+
     if r.nil?
       logger.debug("Instance reservation request failed: #{cloud.get_api_error}")
       self.status_code = STATUS['error']

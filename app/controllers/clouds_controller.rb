@@ -31,6 +31,10 @@ class CloudsController < ApplicationController
     publish :cloud_added, payload.to_json
   end
 
+  def new
+    @cloud = Cloud.new
+  end
+
   def get_zones_select
   end
 

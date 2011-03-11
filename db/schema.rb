@@ -25,12 +25,13 @@ ActiveRecord::Schema.define(:version => 20100211120200) do
     t.boolean "support_elastic_ip"
     t.boolean "support_multiple_ebs_volumes"
     t.boolean "support_multiple_sec_groups"
+    t.boolean "paravirtualized"
     t.boolean "use_root_path"
   end
 
   create_table "clouds", :force => true do |t|
     t.string   "name"
-    t.string   "description"
+    t.text     "description"
     t.string   "api_url"
     t.boolean  "api_usessl"
     t.string   "query_key"
@@ -51,6 +52,7 @@ ActiveRecord::Schema.define(:version => 20100211120200) do
   end
 
   create_table "dns_providers", :force => true do |t|
+    t.string   "provider_type"
     t.string   "username"
     t.string   "credentials"
     t.string   "update_zone"
@@ -87,6 +89,8 @@ ActiveRecord::Schema.define(:version => 20100211120200) do
     t.string   "architecture"
     t.string   "virtualization_type"
     t.string   "reason"
+    t.string   "name"
+    t.text     "description"
     t.string   "image_id"
     t.string   "kernel_id"
     t.string   "ramdisk_id"
@@ -122,6 +126,11 @@ ActiveRecord::Schema.define(:version => 20100211120200) do
     t.integer "security_group_id"
   end
 
+  create_table "instances_volume_types", :id => false, :force => true do |t|
+    t.integer "instance_id"
+    t.integer "volume_type_id"
+  end
+
   create_table "key_pairs", :force => true do |t|
     t.text     "fingerprint"
     t.string   "name"
@@ -133,7 +142,7 @@ ActiveRecord::Schema.define(:version => 20100211120200) do
 
   create_table "security_groups", :force => true do |t|
     t.string   "name"
-    t.string   "description"
+    t.text     "description"
     t.string   "owner_id"
     t.datetime "created_at"
     t.datetime "updated_at"
@@ -148,7 +157,7 @@ ActiveRecord::Schema.define(:version => 20100211120200) do
 
   create_table "vm_types", :force => true do |t|
     t.string  "name"
-    t.string  "description"
+    t.text    "description"
     t.float   "cpu_units"
     t.float   "memory"
     t.float   "disk"
@@ -183,13 +192,18 @@ ActiveRecord::Schema.define(:version => 20100211120200) do
     t.datetime "create_time"
     t.datetime "attach_time"
     t.string   "snapshot_id"
+    t.string   "mount_point"
+    t.string   "name"
+    t.text     "description"
+    t.string   "request_id"
     t.integer  "attachment_status_code"
     t.string   "attachment_status_message"
     t.datetime "attachment_attach_time"
     t.string   "attachment_device"
+    t.string   "filesystem"
     t.boolean  "delete_on_termination"
     t.boolean  "root_device"
-    t.string   "status_code"
+    t.integer  "status_code"
     t.string   "status_message"
     t.datetime "created_at"
     t.datetime "updated_at"

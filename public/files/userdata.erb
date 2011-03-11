@@ -24,6 +24,25 @@ MERLIN_API_ENDPOINT='https://merlin.nym.tld/'
 ACCESS_TOKEN='<%= access_token %>'
 INSTANCE_ID='<%= instance_id %>'
 
+# Default filesystem that will be used for new devices, if none is specified.
+DEFAULT_FS='ext3'
+
+# A tag that will be used for logging and configuration. The script will create
+# /etc/$TAG and /var/log/$TAG.
+
+TAG='tld'
+
+if [ -d /etc/$TAG] || [ -d /var/log/$TAG ]; then
+    echo "ERROR: Looks like this script has been run before. If you really want"
+    echo "to run it again, remove /etc/$TAG and /var/log/$TAG ."
+    exit -1
+fi
+
+set -e -x
+mkdir -p /var/log/$TAG
+exec > /var/log/$TAG/startup.log
+exec 2>&1
+
 # First, a sanity check...
 REPORTED_ID=`wget http://169.254.169.254/latest/meta-data/instance-id -q -O -`
 
@@ -33,51 +52,73 @@ if [ "$INSTANCE_ID" != "$REPORTED_ID" ]; then
     exit -1
 fi
 
-set -e -x
-mkdir -p /var/log/tld
-exec > /var/log/tld/startup.log
-exec 2>&1
-
 export DEBIAN_FRONTEND=noninteractive
+apt-get install augeas-tools augeas-lenses
 
 shadowconfig on
-
 echo '127.0.0.1 localhost' > /etc/hosts
-echo '10.0.8.10 puppet.nym.tld puppet' >> /etc/hosts
+echo '1.2.3.4 puppet.tld puppet' >> /etc/hosts
 
 echo $HOSTNAME > /etc/hostname
 hostname -F /etc/hostname
 
 # Introduce ourselves to Merlin, or notify it that we're alive
-wget "https://$MERLIN_API_ENDPOINT/instance/$ID/hello?hostname=$HOSTNAME&accesstoken=$ACCESS_TOKEN" -O /var/log/tld/hello.log
+wget "https://$MERLIN_API_ENDPOINT/instance/$ID/hello?hostname=$HOSTNAME&accesstoken=$ACCESS_TOKEN" -O /var/log/$TAG/hello.log
 
 # Ask Merlin to attach any additional storage that has been provisioned
-wget "https://$MERLIN_API_ENDPOINT/instance/$ID/attach_storage&accesstoken=$ACCESS_TOKEN" -O /var/log/tld/attachstorage.log
+wget "https://$MERLIN_API_ENDPOINT/instance/$ID/attach_storage&accesstoken=$ACCESS_TOKEN" -O /var/log/$TAG/attachstorage.log
 
-<% if volume.length >= 2 %>
-echo "Additional volumes were requested."
-  <% for vol in volume %>
-    # Really, really make sure we never run mkfs on a root device
-    <% if not vol.root %>
-      echo "Initializing volume <%= vol.device %>, mount point <%= vol.mount_point %>"
-      # One F will force mkfs to make a filesystem on an entire block device; this option won't
-      # overwrite existing filesystems.
-      mkfs -F -t <%= vol.fs %> <%= vol.device %>
-      mkdir -p <%= vol.mount_point %>
-      mount <%= vol.device %> <%= vol.mount_point %>
-    <% else %>
-    echo "Not dealing with volume <%= vol.device %>, mount point <%= vol.mount_point %> - flagged as root device"
-    <% end %>
-  <% end %>
+echo "Processing volume configuration..."
+<% for vol in volume %>
+<% vol_id = vol.volume_id.upcase.sub('-','') %>
+# Really, really make sure we never run mkfs on a root device
+<% if not vol.root_device %>
+echo "Initializing volume <%= vol.attachment_device %>, mount point <%= vol.mount_point %>"
+mkdir -p <%= vol.mount_point %>
+# One F will force mkfs to make a filesystem on an entire block device; this option won't
+# overwrite existing filesystems.
+<% if vol.filesystem.nil? %>
+<%= vol_id %>_FS=$DEFAULT_FS
+<% else %>
+<%= vol_id %>_FS='<%= vol.filesystem %>'
+<% end %>
+<% if cloud.cloud_type.paravirtualized? %>
+<%= vol_id %>_DEVICE='<%= vol.attachment_device %>'
+<% else %>
+# This should almost assuredly work since this is KVM+Euca, and Euca doesn't
+# support multiple EBS volumes; in theory, the next device added to the SCSI
+# bus should always be /dev/sdb...
+<%= vol_id %>_DEVICE='/dev/sdb'
+<% end %>
+# What partishuns wood you like to floormat?
+mkfs -F -t $<%= vol_id %>_FS $<%= vol_id %>_DEVICE
+
+# Now, make an augeas file that will update our fstab appropriately.
+cat <<EOF /etc/$TAG/fstab.augeas
+defvar fstab /files/etc/fstab
+set $fstab/01/spec $<%= vol_id %>_DEVICE
+set $fstab/01/file <%= vol.mount_point %>
+set $fstab/01/vfstype $<%= vol_id %>_FS
+set $fstab/01/opt[0] defaults
+set $fstab/01/dump 0
+set $fstab/01/passno 0
+save
+EOF
+
+# Hopefully update fstab with our shiny new augeas file.
+augtool < /etc/$TAG/fstab.augeas 1>&2 2> /var/log/$TAG/augeas.log
+<% else %>
+echo "Not dealing with volume <%= vol.attachment_device %>, mount point <%= vol.mount_point %> - flagged as root device"
+<% end %>
 <% end %>
 
 echo "Starting puppet..."
 puppetd --onetime --verbose --waitforcert 5 &
 PUPPET_PID=$!
-echo $PUPPET_PID > /var/log/tld/puppet.pid
+echo $PUPPET_PID > /var/log/$TAG/puppet.pid
 sleep 5
 
-wget "https://$MERLIN_API_ENDPOINT/instance/$ID/sign_key&access_token=$ACCESS_TOKEN" -O /var/log/tld/signkey.log
+wget "https://$MERLIN_API_ENDPOINT/instance/$ID/sign_key&access_token=$ACCESS_TOKEN" -O /var/log/$TAG/signkey.log
 
 # We will wait a maximum of ten minutes for puppet to finish, then we assume
 # something is amiss

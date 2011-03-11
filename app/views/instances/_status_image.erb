@@ -1,0 +1,16 @@
+<% #There's probably a better way to do this, right? %>
+<% case object.status_code when Instance::STATUS['error'] %>
+<img src="/images/instance-error.png">
+<% when Instance::STATUS['pending'], Instance::STATUS['requested'], Instance::STATUS['reserved'], Instance::STATUS['provisioning'],
+   Instance::STATUS['provisioned'] %>
+<img src="/images/instance-pending.png">
+<% when Instance::STATUS['active'], Instance::STATUS['running'] %>
+<img src="/images/instance-running.gif">
+<% when Instance::STATUS['ghost'] %>
+<img src="/images/instance-unknown.png">
+<% when Instance::STATUS['shutting-down'], Instance::STATUS['terminated'], Instance::STATUS['stopping'], Instance::STATUS['stopped'] %>
+<img src="/images/instance-stopped.png">
+
+<% else %>
+
+<% end %>

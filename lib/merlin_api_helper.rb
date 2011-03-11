@@ -20,8 +20,9 @@ require "AWS"
 
 module MerlinApiHelper
 
-  class MerlinAWSConnector < AWS::EC2::Base
-    # We implement this here because not all the functions in the amazon-ec2 gem support filtering
+
+  class MerlinEC2Connector < AWS::EC2::Base
+    # Implement some filtering here since the gem doesn't, yet
     def describe_volumes_with_filter(options = {})
       options = { :volume_id => [] }.merge(options)
       params = pathlist("VolumeId", options[:volume_id])
@@ -30,6 +31,16 @@ module MerlinApiHelper
       end
       return response_generator(:action => "DescribeVolumes", :params => params)
     end
+  end
+
+  class MerlinEucalyptusConnector < AWS::EC2::Base
+    # Eucalyptus doesn't support the same API versions as EC2 currently
+    API_VERSION='2009-11-30'
+
+    def api_version
+      API_VERSION
+    end
+
   end
 
   class APIObjectNotFound < Exception
@@ -44,14 +55,14 @@ module MerlinApiHelper
       endpoint = URI.parse(api_url)
       logger.debug("Connecting to API endpoint at #{endpoint.host}, cloud type is #{cloud_type}")
       if cloud_type == 'eucalyptus' then
-        @connector = MerlinAWSConnector.new(:access_key_id => access_key_id,
-                                            :secret_access_key => access_key,
-                                            :server => endpoint.host,
-                                            :usessl => usessl,
-                                            :path => endpoint.path,
-                                            :port => endpoint.port)
+        @connector = MerlinEucalyptusConnector.new(:access_key_id => access_key_id,
+                                                   :secret_access_key => access_key,
+                                                   :server => endpoint.host,
+                                                   :usessl => usessl,
+                                                   :path => endpoint.path,
+                                                   :port => endpoint.port)
       elsif cloud_type == 'aws' then
-        @connector = MerlinAWSConnector.new(:access_key_id => access_key_id,
+        @connector = MerlinEC2Connector.new(:access_key_id => access_key_id,
                                             :secret_access_key => access_key)
       end
     rescue Exception => exc
@@ -79,16 +90,15 @@ module MerlinApiHelper
     rescue Exception => exc
       logger.error "API call #{function} reported error: " + exc
       @api_error = exc
-      return nil
+      return false
       if render_failure_xml
         flash[:error] = "API call #{function} reported error: " + exc
-        #respond_to do |format| format.xml and return
-        render :template => 'merlin/xmlerror' and return
-      end
+       #respond_to do |format| format.xml and return
+       render :template => 'merlin/xmlerror' and return
+     end
       return
     end
     return resp
-
   end
 
 end

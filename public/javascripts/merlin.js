@@ -106,6 +106,7 @@ $(document).ready(function() {
         "bProcessing": true,
         "bServerSide": true,
         "sAjaxSource": "/instances.json",
+        "sPaginationType" : "full_numbers",
         "aoColumns" : [
             { "sClass": "center", "bSortable": true },
             { "sClass": "center", "bSortable": true },

@@ -149,33 +149,41 @@ class Cloud < ActiveRecord::Base
     # update functions: we pull all the information for everything at once and update
     # using the information returned.
 
-    @connector.describe_instances.reservationSet.item.each do |reservationSet|
-      # Each reservation set, remember, can have multiple instances
-      reservationSet.instancesSet.item.each do |instance|
-        i = Instance.find_by_instance_id(instance.instanceId)
-        if i.nil?
-          i = Instance.new(:instance_id => instance.instanceId)
-          i.status_code = Instance::STATUS['running']
-          i.status_message = "API refresh discovered new instance"
-          i.cloud = self
+    rset = @connector.describe_instances.reservationSet
+
+    if !rset.nil?
+      rset.item.each do |reservationSet|
+        # Each reservation set, remember, can have multiple instances
+        reservationSet.instancesSet.item.each do |instance|
+          i = Instance.find_by_instance_id(instance.instanceId)
+          if i.nil?
+            i = Instance.new(:instance_id => instance.instanceId)
+            i.status_code = Instance::STATUS['running']
+            i.status_message = "API refresh discovered new instance"
+            i.cloud = self
+          end
+          i.update_properties(instance)
+          # Set a few things that aren't simple assignments, this should be abstracted eventually
+          logger.debug("instance #{instance.instanceId} has secgroup(s) #{reservationSet.groupSet.item.inspect}, vmType #{instance.instanceType}, keyPair #{instance.keyName}")
+          i.vm_type = VmType.find_by_name_and_cloud_type_id(instance['instanceType'], self.cloud_type)
+          i.key_pair = KeyPair.find_by_name_and_cloud_id(instance['keyName'], self)
+          reservationSet.groupSet.item.each do |secgroup|
+            i.security_groups.push(SecurityGroup.find_by_name_and_cloud_id(secgroup.groupId,
+                                                                           self))
+          end
+          i.save
         end
-        i.update_properties(instance)
-        # Set a few things that aren't simple assignments, this should be abstracted eventually
-        logger.debug("instance #{instance.instanceId} has secgroup(s) #{reservationSet.groupSet.item.inspect}, vmType #{instance.instanceType}, keyPair #{instance.keyName}")
-        i.vm_type = VmType.find_by_name_and_cloud_type_id(instance['instanceType'], self.cloud_type)
-        i.key_pair = KeyPair.find_by_name_and_cloud_id(instance['keyName'], self)
-        reservationSet.groupSet.item.each do |secgroup|
-          i.security_groups.push(SecurityGroup.find_by_name_and_cloud_id(secgroup.groupId,
-                                                                         self))
-        end
-        i.save
       end
     end
 
-    @connector.describe_volumes.volumeSet.item.each do |volume|
-      v = Volume.find_or_create_by_volume_id(volume.volumeId)
-      v.cloud = self
-      v.update_properties(volume)
+    vset = @connector.describe_volumes.volumeSet
+
+    if !vset.nil? 
+      vset.item.each do |volume|
+        v = Volume.find_or_create_by_volume_id(volume.volumeId)
+        v.cloud = self
+        v.update_properties(volume)
+      end
     end
 
     # Snapshot support not done yet
