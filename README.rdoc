@@ -1,4 +1,6 @@
-== Welcome to Merlin
+= Merlin
+
+== What is Merlin?
 
 Merlin is a Ruby on Rails web application for managing and controlling EC2
 API-compatible clouds (Eucalyptus / AWS EC2). The primary goal of the project
@@ -89,8 +91,8 @@ Merlin can work with existing setups.
 * Provides EC2 functionality to Rails objects
 
 Merlin provides a lot of neat functionality in its models, which can also make
-it very handy as the basis for more intelligent command line tools. Here are
-some examples:
+it very handy as the basis for more intelligent command line tools (documentation
+is forthcoming, but here are some simple examples).
 
 # Get an Amazon cloud
 ec2 = Cloud.find_by_name "Amazon EC2 (us-east)"
@@ -152,22 +154,6 @@ v.snapshot_id = "snap-13371337"
 v.availability_zone = i.availability_zone
 v.reserve
 
-# Attach a volume to an instance
-i.attach_volume v
-i.volumes
-i.volumes[0].attachment_status?
-i.volumes[0].attachment_status_message?
-i.volumes[0].attachment_device
-
-# Volumes know to which instance they are attached
-v.instance
-
-# Show all resources in an availability zone
-
-ec2 = Cloud.find_by_name('Amazon EC2 (us-east)')
-ec2.availability_zone.instances
-ec2.availability_zone.volumes
-
 == Sharp Edges
 
 Merlin is missing a lot of stuff: model validations, sanity checks, etc. All of
@@ -177,38 +163,12 @@ account, it will also let you blow everyone else's foot away as well. You have
 been warned, be careful with it. There are no protections against doing
 unbelievably stupid things with Merlin....yet.
 
-== Immediate Plans
-
-Here are a list of items I am focusing on, in the immediate future:
-
-* Model/input validations & sanity checks
-
-  Yeah, I've got no excuse for this not already being there, but,
-  there it is.
-
-* Better UI
-
-  The UI is crap, honestly. This is because I was focusing on getting
-  the underlying functionality working and getting it released.
-
-* Management of security groups / keypairs
-
-  Currently, the only thing Merlin knows about security groups and keypairs are
-  their names; real management (creating a new key pair, importing a keypair,
-  adding/removing security group rules) is not implemented
-
-* F5 / Elastic Load Balancing management support
-
-  You'll be able to eventually manage F5's and ELBs via their respective APIs.
-  This will allow Merlin to auto-register new instances with their respective
-  load balancers.
-
 == Getting Started
 
 1. Download Merlin
 2. Install it somewhere
 3. Run db:migrate
-4. Run bundle
+4. Run bundler
 4. Create a new cloud either via seeds or via the Merlin UI
 5. Create a default instance type
 6. Create a default userdata script
@@ -247,3 +207,38 @@ later version.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+== Additional Resources
+
+=== On the Web
+
+* Project webpage: http://merlincloud.org
+* Issue Tracker: http://github.com/baughj/Merlin/issues
+* Discussion Forum: http://groups.google.com/group/merlin-discuss
+* Also on Gitorious: http://gitorious.org/merlincc
+
+== Credits
+
+Thanks to Matt Lee for providing the Merlin logo, and the clever tagline.
+
+== Contact
+
+If you're interested in hacking on Merlin (and I hope you are), I am happy to
+receive requests on either Gitorious or Github. You can also just send an email
+to mailto:baughj@discordians.net or join the Google Groups forum.
+
+== Patches & Pull Requests
+
+Here's how I hope you'll do this:
+
+* Fork the main Merlin repository, on either Gitorious or Github.
+
+* Create a branch that describes what you're doing: 
+  git checkout -b fixing_amazingly_terrible_bugs_holy_crap
+
+* Please don't use "master" or "development" in your fork.
+
+* Keep your changesets small, don't make a commit that changes eleventy 
+  billion things or can't be easily merged into master.
+
+Feel free, though, to just send patches.
