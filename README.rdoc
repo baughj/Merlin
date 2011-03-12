@@ -94,6 +94,7 @@ Merlin provides a lot of neat functionality in its models, which can also make
 it very handy as the basis for more intelligent command line tools (documentation
 is forthcoming, but here are some simple examples).
 
+<tt>
 # Get an Amazon cloud
 ec2 = Cloud.find_by_name "Amazon EC2 (us-east)"
 
@@ -153,6 +154,7 @@ v = Volume.new
 v.snapshot_id = "snap-13371337"
 v.availability_zone = i.availability_zone
 v.reserve
+</tt>
 
 == Sharp Edges
 
