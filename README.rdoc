@@ -93,68 +93,65 @@ Merlin can work with existing setups.
 Merlin provides a lot of neat functionality in its models, which can also make
 it very handy as the basis for more intelligent command line tools (documentation
 is forthcoming, but here are some simple examples).
+   
+   # Get an Amazon cloud
+   ec2 = Cloud.find_by_name "Amazon EC2 (us-east)"
 
-<tt>
-# Get an Amazon cloud
-ec2 = Cloud.find_by_name "Amazon EC2 (us-east)"
+   # Discover all of our instances, volumes, etc
+   ec2.update_from_api
 
-# Discover all of our instances, volumes, etc
-ec2.update_from_api
+   # Ask the cloud if a specific object exists
+   ec2.object_exists? i-13371337
 
-# Ask the cloud if a specific object exists
+   # Which instances are on our cloud?
+   ec2.instances.all
 
-ec2.object_exists? i-13371337
+   # Which instances are in a specific availability zone on our cloud?
+   AvailabilityZone.find_by_name('us-east-1a').instances.all
 
-# Which instances are on our cloud?
-ec2.instances.all
+   # Create a new instance type, which we can then use as a template for new instances.
 
-# Which instances are in a specific availability zone on our cloud?
-AvailabilityZone.find_by_name('us-east-1a').instances.all
+   it = InstanceType.new
+   it.name = "My Ubuntu Lucid 10.04 Image"
+   it.image_id = "ami-13371337"
+   it.kernel_id = "aki-DEADBEEF"
+   it.vm_type = cloud.vm_types.find_by_name('m1.small')
+   it.bits = 64
+   it.description = "My custom Ubuntu Lucid image."
+   it.os = "Ubuntu Lucid 10.04"
+   it.save
 
-# Create a new instance type, which we can then use as a template for new instances.
+   # Run a new instance, using the instance type we just created.
 
-it = InstanceType.new
-it.name = "My Ubuntu Lucid 10.04 Image"
-it.image_id = "ami-13371337"
-it.kernel_id = "aki-13371337"
-it.vm_type = cloud.vm_types.find_by_name('m1.small')
-it.bits = 64
-it.description = "My custom Ubuntu Lucid image."
-it.os = "Ubuntu Lucid 10.04"
-it.save
+   i = Instance.new
+   i.cloud = Cloud.find_by_name 'Amazon EC2 (us-east)'
+   i.hostname = 'foo-01.bar'
+   i.instance_type = InstanceType.find_by_name_and_bits('My Ubuntu Lucid 10.04 Image', 64)
+   i.key_pair = KeyPair.find_by_name('mycloudkey')
+   i.security_group = SecurityGroup.find_by_name('default-security-group')
+   i.user_data = Userdata.find_by_name('My Userdata Script')
+   i.reserve
 
-# Run a new instance, using the instance type we just created.
+   # View our status and reservation
 
-i = Instance.new
-i.cloud = Cloud.find_by_name 'Amazon EC2 (us-east)'
-i.hostname = 'foo-01.bar'
-i.instance_type = InstanceType.find_by_name_and_bits('My Ubuntu Lucid 10.04 Image', 64)
-i.key_pair = KeyPair.find_by_name('mycloudkey')
-i.security_group = SecurityGroup.find_by_name('default-security-group')
-i.user_data = Userdata.find_by_name('My Userdata Script')
-i.reserve
+   i.reservation_id
+   i.status_code
+   i.status_message
 
-# View our status and reservation
+   # Where was the new instance placed?
+   i.availability_zone.name
 
-i.reservation_id
-i.status_code
-i.status_message
+   # Create a new EBS volume
+   v = Volume.new
+   v.size = 10
+   v.availability_zone = i.availability_zone
+   v.reserve
 
-# Where was the new instance placed?
-i.availability_zone.name
-
-# Create a new EBS volume
-v = Volume.new
-v.size = 10
-v.availability_zone = i.availability_zone
-v.reserve
-
-# Create a new EBS volume from a snapshot
-v = Volume.new
-v.snapshot_id = "snap-13371337"
-v.availability_zone = i.availability_zone
-v.reserve
-</tt>
+   # Create a new EBS volume from a snapshot
+   v = Volume.new
+   v.snapshot_id = "snap-13371337"
+   v.availability_zone = i.availability_zone
+   v.reserve
 
 == Sharp Edges
 
