@@ -41,12 +41,12 @@ class InstancesController < ApplicationController
       render :action => "new"
     end
   end
-
+  
   def new 
     @instance = Instance.new
     @instance.volume.build
   end
-
+  
   def index
     respond_to do |format|
       format.json do 
@@ -73,11 +73,11 @@ class InstancesController < ApplicationController
       end
     end
   end
-
+  
   def attachstorage 
-
+    
     check_token
-
+    
     if @instance.running?
       @instance.volume.each do |v|
         if !v.request_attachment
@@ -89,10 +89,10 @@ class InstancesController < ApplicationController
     else
       api_render_error("Instance must be in a running state to attach storage to it.")
     end
-
+  end
   def hello
-
-    check_token
+      
+      check_token
 
     if @instance.running? then
       @instance.status_code = Instance::STATUS['error']
