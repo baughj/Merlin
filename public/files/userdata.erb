@@ -94,7 +94,7 @@ mkdir -p <%= vol.mount_point %>
 mkfs -F -t $<%= vol_id %>_FS $<%= vol_id %>_DEVICE
 
 # Now, make an augeas file that will update our fstab appropriately.
-cat <<EOF /etc/$TAG/fstab.augeas
+cat <<EOF /etc/$TAG/fstab.augeas.<%= vol.volume_id %>
 defvar fstab /files/etc/fstab
 set $fstab/01/spec $<%= vol_id %>_DEVICE
 set $fstab/01/file <%= vol.mount_point %>
@@ -106,7 +106,7 @@ save
 EOF
 
 # Hopefully update fstab with our shiny new augeas file.
-augtool < /etc/$TAG/fstab.augeas 1>&2 2> /var/log/$TAG/augeas.log
+augtool < /etc/$TAG/fstab.augeas.<%= vol.volume_id %> 1>&2 2> /var/log/$TAG/augeas.log
 <% else %>
 echo "Not dealing with volume <%= vol.attachment_device %>, mount point <%= vol.mount_point %> - flagged as root device"
 <% end %>
