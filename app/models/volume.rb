@@ -82,7 +82,7 @@ class Volume < ActiveRecord::Base
     self.attachment_attach_time = a_info.attachTime
     self.attachment_device = a_info.device
     self.delete_on_termination = a_info.deleteOnTermination
-    self.instance << Instance.find_by_instance_id(a_info.instanceId)
+    self.instance = Instance.find_by_instance_id(a_info.instanceId)
     self.root_device = self.attachment_device == self.instance.root_device_name
     self.save
     return true

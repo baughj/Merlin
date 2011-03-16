@@ -168,8 +168,8 @@ class Cloud < ActiveRecord::Base
           i.vm_type = VmType.find_by_name_and_cloud_type_id(instance['instanceType'], self.cloud_type)
           i.key_pair = KeyPair.find_by_name_and_cloud_id(instance['keyName'], self)
           reservationSet.groupSet.item.each do |secgroup|
-            i.security_groups.push(SecurityGroup.find_by_name_and_cloud_id(secgroup.groupId,
-                                                                           self))
+            i.security_groups << SecurityGroup.find_by_name_and_cloud_id(secgroup.groupId,
+                                                                         self)
           end
           i.save
         end
