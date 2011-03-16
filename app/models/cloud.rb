@@ -23,14 +23,14 @@ require "yaml"
 
 class Cloud < ActiveRecord::Base
 
-  has_many :availability_zone
-  has_many :instance
-  has_many :volume
-  has_many :security_group
+  has_many :availability_zones
+  has_many :instances
+  has_many :volumes
+  has_many :security_groups
   has_one :dns_provider
   belongs_to :cloud_type
-  has_many :instance_type
-  has_many :key_pair
+  has_many :instance_types
+  has_many :key_pairs
  
   include MerlinApiHelper
   
@@ -168,8 +168,8 @@ class Cloud < ActiveRecord::Base
           i.vm_type = VmType.find_by_name_and_cloud_type_id(instance['instanceType'], self.cloud_type)
           i.key_pair = KeyPair.find_by_name_and_cloud_id(instance['keyName'], self)
           reservationSet.groupSet.item.each do |secgroup|
-            i.security_groups.push(SecurityGroup.find_by_name_and_cloud_id(secgroup.groupId,
-                                                                           self))
+            i.security_groups << SecurityGroup.find_by_name_and_cloud_id(secgroup.groupId,
+                                                                         self)
           end
           i.save
         end

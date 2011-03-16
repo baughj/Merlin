@@ -22,5 +22,5 @@
 
 class KeyPair < ActiveRecord::Base
   belongs_to :cloud
-  has_many :instance
+  has_many :instances
 end

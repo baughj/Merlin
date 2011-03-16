@@ -19,9 +19,9 @@
         <%= form.input :security_groups, :collection => [], :hint => "The initial security group for the instance. Please note, for clouds that only support one group per VM, only the first selected one will be used!", :label => "Security Group", :required => true %> 
       <% end %>
       <% form.inputs "Volume Configuration" do %>
-        <%= form.input :volume, :label => "Attach Existing Volume", :hint => "Volumes that will be attached to this instance." %>
+        <%= form.input :volumes, :label => "Attach Existing Volume", :hint => "Volumes that will be attached to this instance." %>
         Or, create a new volume:
-        <% form.semantic_fields_for :volume do |volume| %>
+        <% form.semantic_fields_for :volumes do |volume| %>
           <%= volume.input :size, :hint => "Size of the new volume, in gigabytes", :label => "Size (in GB)", :input_html => { :class => 'sm' } %>
           <%= volume.input :mount_point, :hint => "Where the volume will be mounted within the new instance", :input_html => { :class => 'med' } %>
           <%= volume.input :description, :hint => "A description of the new volume", :required => false, :input_html => { :class => 'med' } %>

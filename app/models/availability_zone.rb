@@ -22,7 +22,7 @@
 class AvailabilityZone < ActiveRecord::Base
 
   belongs_to :cloud
-  has_many :instance
-  has_many :volume
-  has_many :volume_snapshot
+  has_many :instances
+  has_many :volumes
+  has_many :volume_snapshots
 end
