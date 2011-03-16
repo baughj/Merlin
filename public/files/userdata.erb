@@ -69,7 +69,7 @@ wget "https://$MERLIN_API_ENDPOINT/api/i/$ID/hello?hostname=$HOSTNAME&accesstoke
 wget "https://$MERLIN_API_ENDPOINT/api/i/$ID/attach_storage&accesstoken=$ACCESS_TOKEN" -O /var/log/$TAG/attachstorage.log
 
 echo "Processing volume configuration..."
-<% for vol in volume %>
+<% for vol in volumes %>
 <% vol_id = vol.volume_id.upcase.sub('-','') %>
 # Really, really make sure we never run mkfs on a root device
 <% if not vol.root_device %>
