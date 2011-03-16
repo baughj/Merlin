@@ -22,6 +22,6 @@
 
 class VmType < ActiveRecord::Base
   has_one :cloud_type
-  has_many :instance
-  has_many :instance_type
+  has_many :instances
+  has_many :instance_types
 end

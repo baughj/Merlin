@@ -82,8 +82,7 @@ class Volume < ActiveRecord::Base
     self.attachment_attach_time = a_info.attachTime
     self.attachment_device = a_info.device
     self.delete_on_termination = a_info.deleteOnTermination
-    self.instance = Instance.find_by_instance_id(a_info.instanceId)
-    self.instance.volume.push(self)
+    self.instance << Instance.find_by_instance_id(a_info.instanceId)
     self.root_device = self.attachment_device == self.instance.root_device_name
     self.save
     return true
@@ -92,7 +91,6 @@ class Volume < ActiveRecord::Base
   def clear_attachment
     # "Clear" an attachment, removing its association with an instance and
     # removing its attachment information.
-    self.instance.volume.delete(self)
     self.instance = nil
     self.attachment_status_code = nil
     self.attachment_status_message = "Marked as detached by API update"
@@ -173,7 +171,7 @@ class Volume < ActiveRecord::Base
       @volume_error = "This volume is not available. Status is #{STATUS_REVERSE[status_code]}, should be available."
     end
 
-    if cloud.cloud_type.multiple_volumes?
+    if cloud.cloud_type.support_multiple_ebs_volumes?
 
       if !cloud.api_request(:attach_volume, false, :volume_id => volume_id,
                             :instance_id => instance_id,

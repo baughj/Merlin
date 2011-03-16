@@ -44,7 +44,7 @@ class InstancesController < ApplicationController
   
   def new 
     @instance = Instance.new
-    @instance.volume.build
+    @instance.volumes.build
   end
   
   def index
@@ -79,12 +79,12 @@ class InstancesController < ApplicationController
     check_token
     
     if @instance.running?
-      @instance.volume.each do |v|
+      @instance.volumes.each do |v|
         if !v.request_attachment
           api_render_error("Error: Volume #{v.volume_id} reported #{v.get_attachment_error}")
         end
       end
-      attachments = @instance.volume.map { |v| v.volume_id}.to_sentence
+      attachments = @instance.volumes.map { |v| v.volume_id}.to_sentence
       api_render_success("Volumes #{attachments} were successfully attached.")
     else
       api_render_error("Instance must be in a running state to attach storage to it.")

@@ -28,16 +28,16 @@ class Instance < ActiveRecord::Base
 
   belongs_to :availability_zone
   belongs_to :cloud
-  has_many :volume
-  has_and_belongs_to_many :volume_type
+  has_many :volumes
+  has_and_belongs_to_many :volume_types
   has_and_belongs_to_many :security_groups
   belongs_to :instance_type
   belongs_to :vm_type
   belongs_to :userdata
   belongs_to :key_pair
 
-  accepts_nested_attributes_for :volume, :allow_destroy => false
-  accepts_nested_attributes_for :volume_type, :allow_destroy => false
+  accepts_nested_attributes_for :volumes, :allow_destroy => false
+  accepts_nested_attributes_for :volume_types, :allow_destroy => false
 
   # Define some status constants. We combine a bunch of different Merlin-specific states
   # with the typical EC2 states. 
@@ -230,8 +230,8 @@ class Instance < ActiveRecord::Base
     # reservation
 
     r_info.groupSet.item.each do |secgroup|
-      security_groups.push(SecurityGroup.find_or_create_by_name_and_cloud_id(secgroup.groupId,
-                                                                              cloud))
+      security_groups << SecurityGroup.find_or_create_by_name_and_cloud_id(secgroup.groupId,
+                                                                              cloud)
     end
 
     # Now grab the instance we're actually looking for

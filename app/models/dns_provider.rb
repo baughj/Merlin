@@ -22,5 +22,5 @@
 
 class DNSProvider < ActiveRecord::Base
   enum_attr :provider_type, %w(ultradns bind)
-  has_many :cloud
+  has_many :clouds
 end

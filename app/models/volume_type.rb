@@ -21,5 +21,5 @@
 #
 
 class VolumeType < ActiveRecord::Base
-  has_many :volume
+  has_many :volumes
 end

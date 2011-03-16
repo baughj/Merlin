@@ -21,7 +21,7 @@
 #
 
 class InstanceType < ActiveRecord::Base
-  has_many :instance
+  has_many :instances
   belongs_to :vm_type
   belongs_to :cloud
 end
