@@ -36,8 +36,8 @@ class Instance < ActiveRecord::Base
   belongs_to :userdata
   belongs_to :key_pair
 
-  accepts_nested_attributes_for :volumes, :allow_destroy => false
-  accepts_nested_attributes_for :volume_types, :allow_destroy => false
+  accepts_nested_attributes_for :volumes, :allow_destroy => false, :reject_if => :all_blank
+  accepts_nested_attributes_for :volume_types, :allow_destroy => false, :reject_if => :all_blank
 
   # Define some status constants. We combine a bunch of different Merlin-specific states
   # with the typical EC2 states. 
