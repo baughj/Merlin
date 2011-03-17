@@ -47,7 +47,7 @@ exec 2>&1
 REPORTED_ID=`wget http://169.254.169.254/latest/meta-data/instance-id -q -O -`
 
 if [ "$INSTANCE_ID" != "$REPORTED_ID" ]; then
-    wget "https://$MERLIN_API_ENDPOINT/instance/$ID/intervene&access_token=$ACCESS_TOKEN&condition=idmismatch" 
+    wget "$MERLIN_API_ENDPOINT/api/i/$ID/intervene&access_token=$ACCESS_TOKEN&condition=idmismatch" 
     echo "ERROR: My instance ID should be $INSTANCE_ID but is reported as $REPORTED_ID...?"
     exit -1
 fi
@@ -63,10 +63,10 @@ echo $HOSTNAME > /etc/hostname
 hostname -F /etc/hostname
 
 # Introduce ourselves to Merlin, or notify it that we're alive
-wget "https://$MERLIN_API_ENDPOINT/api/i/$ID/hello?hostname=$HOSTNAME&accesstoken=$ACCESS_TOKEN" -O /var/log/$TAG/hello.log
+wget "$MERLIN_API_ENDPOINT/api/i/$ID/hello?hostname=$HOSTNAME&access_token=$ACCESS_TOKEN" -O /var/log/$TAG/hello.log
 
 # Ask Merlin to attach any additional storage that has been provisioned
-wget "https://$MERLIN_API_ENDPOINT/api/i/$ID/attach_storage&accesstoken=$ACCESS_TOKEN" -O /var/log/$TAG/attachstorage.log
+wget "$MERLIN_API_ENDPOINT/api/i/$ID/attach_storage&access_token=$ACCESS_TOKEN" -O /var/log/$TAG/attachstorage.log
 
 echo "Processing volume configuration..."
 <% for vol in volumes %>
@@ -118,7 +118,7 @@ PUPPET_PID=$!
 echo $PUPPET_PID > /var/log/$TAG/puppet.pid
 sleep 5
 
-wget "https://$MERLIN_API_ENDPOINT/api/i/$ID/sign_key&access_token=$ACCESS_TOKEN" -O /var/log/$TAG/signkey.log
+wget "$MERLIN_API_ENDPOINT/api/i/$ID/puppet_signkey&access_token=$ACCESS_TOKEN" -O /var/log/$TAG/signkey.log
 
 # We will wait a maximum of ten minutes for puppet to finish, then we assume
 # something is amiss
@@ -134,9 +134,9 @@ done
 
 if [ -d "proc/$PUPPET_PID" ];
 then
-    wget "https://$MERLIN_API_ENDPOINT/api/i/$ID/intervene&access_token=$ACCESS_TOKEN&condition=puppetlongrunning" 
+    wget "$MERLIN_API_ENDPOINT/api/i/$ID/intervene&access_token=$ACCESS_TOKEN&condition=puppetlongrunning" 
 else
-    wget "https://$MERLIN_API_ENDPOINT/api/i/$ID/complete&access_token=$ACCESS_TOKEN"
+    wget "$MERLIN_API_ENDPOINT/api/i/$ID/complete&access_token=$ACCESS_TOKEN"
 fi
 
 echo "Provisioning complete!"
