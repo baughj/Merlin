@@ -274,7 +274,7 @@ class Instance < ActiveRecord::Base
           (i_info.blockDeviceMapping.item.select {
             |k| k.has_key? 'ebs' }.map { 
             |e| e.ebs.volumeId } | 
-            volume.map { |v| v.volume_id }).each do |v|
+            volumes.map { |v| v.volume_id }).each do |v|
             vol = Volume.find_or_create_by_volume_id(v)
             vol.update_from_api
           end
