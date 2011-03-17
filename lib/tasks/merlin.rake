@@ -32,7 +32,7 @@ namespace :merlin do
   end
 
   task :destroytest => :environment do
-    i = Instance.find_or_create_by_instance_id('i-00000000'.destroy
+    i = Instance.find_or_create_by_instance_id('i-00000000').destroy
     i = Instance.find_or_create_by_instance_id('i-00000001').destroy
     i = Instance.find_or_create_by_instance_id('i-00000002').destroy
 
@@ -43,9 +43,9 @@ namespace :merlin do
     # if it builds correctly.
 
     i = Instance.create(:instance_id => 'i-00000000',
-                        :hostname => 'userdatatest-novol.tld'
-                        :availability_zone => Cloud.first.availability_zones.first
-                        :userdata => Userdata.find_by_name("userdata-sitedefault")
+                        :hostname => 'userdatatest-novol.tld',
+                        :availability_zone => Cloud.first.availability_zones.first,
+                        :userdata => Userdata.find_by_name("userdata-sitedefault"),
                         :cloud => Cloud.first)
 
     i.generate_access_token
@@ -60,9 +60,9 @@ namespace :merlin do
   
   task :testmultiplevoluserdata => :environment do
     i = Instance.create(:instance_id => 'i-00000001',
-                        :hostname => 'userdatatest-onevol.tld'
-                        :availability_zone => Cloud.first.availability_zones.first
-                        :userdata => Userdata.find_by_name("userdata-sitedefault")
+                        :hostname => 'userdatatest-onevol.tld',
+                        :availability_zone => Cloud.first.availability_zones.first,
+                        :userdata => Userdata.find_by_name("userdata-sitedefault"),
                         :cloud => Cloud.first)
 
     i.generate_access_token
@@ -98,10 +98,10 @@ namespace :merlin do
   task :testonevoluserdata => :environment do
     
     i = Instance.create(:instance_id => 'i-00000002',
-                        :hostname => 'userdatatest-onevol.tld'
-                        :availability_zone => Cloud.first.availability_zones.first
-                        :userdata => Userdata.find_by_name("userdata-sitedefault")
-                        :cloud => Cloud.first
+                        :hostname => 'userdatatest-onevol.tld',
+                        :availability_zone => Cloud.first.availability_zones.first,
+                        :userdata => Userdata.find_by_name("userdata-sitedefault"),
+                        :cloud => Cloud.first)
 
     i.generate_access_token
     
