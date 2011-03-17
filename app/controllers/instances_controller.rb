@@ -36,9 +36,9 @@ class InstancesController < ApplicationController
       @instance.status_message = "Submitted creation request to Merlin."    
       @instance.save
       flash[:notice] = "Instance request submitted."
-      render :action => "index"
+      render :action => "index" and return
     else
-      render :action => "new"
+      render :action => "new" and return 
     end
   end
   
@@ -66,7 +66,7 @@ class InstancesController < ApplicationController
                        i.status_message])
         end
         json_ret['aaData'] = aaData
-        render :json => json_ret.to_json
+        render :json => json_ret.to_json and return
       end
       format.html do 
         render :template => "merlin/index-new.erb" and return
@@ -74,36 +74,42 @@ class InstancesController < ApplicationController
     end
   end
   
-  def attachstorage 
+  def attach_storage 
     
-    check_token
+    if !check_token
+      api_render_error and return
+    end
     
     if @instance.running?
+      if @instance.volumes.length == 0
+        api_render_success("No volumes needed to be attached.") and return
+      end
       @instance.volumes.each do |v|
         if !v.request_attachment
-          api_render_error("Error: Volume #{v.volume_id} reported #{v.get_attachment_error}")
+          api_render_error("Error: Volume #{v.volume_id} reported #{v.get_attachment_error}") and return
         end
       end
       attachments = @instance.volumes.map { |v| v.volume_id}.to_sentence
-      api_render_success("Volumes #{attachments} were successfully attached.")
+      api_render_success("Volumes #{attachments} were successfully attached.") and return 
     else
-      api_render_error("Instance must be in a running state to attach storage to it.")
+      api_render_error("Instance must be in a running state to attach storage to it.") and return 
     end
   end
+
   def hello
       
-      check_token
-
-    if @instance.running? then
-      @instance.status_code = Instance::STATUS['error']
-      @instance.status_message = "hello error: Instance requested hello but was not in a pre-provisioned state...?"
-      @instance.save
-      flash.now[:error] = "Instance status is marked as #{Instance::STATUS_REVERSE[@instance.status_code]} (should be pending/running). Aborting."
-      render :template => "api/response" and return
+    if !check_token
+      api_render_error and return
     end
 
-    # Since the user data script is obviously running, we set our status as provisioning
+    if @instance.seen? then
+      api_render_error("Instance #{@instance.instance_id} already introduced to Merlin.") and return
+    end
+
+    # Since the user data script is obviously running (either automatically or by hand) we 
+    # set our status as provisioning
     @instance.status_code = Instance::STATUS['provisioning']
+    @instance.seen = true
 
     if @instance.hostname.nil?
       @instance.hostname = params[:hostname]
@@ -113,9 +119,12 @@ class InstancesController < ApplicationController
     # and update DNS if applicable.
 
     @instance.needs_api_update = true
+    @instance.save
+
     publish :instance_requested_api_update, {'merlin_instance_id' => @instance.id}.to_json
     publish :instance_requested_dns_update, {'merlin_instance_id' => @instance.id}.to_json
-    render :template => "api/response" and return
+
+    api_render_success("Instance #{@instance.instance_id} introduced to Merlin and queued for API/DNS update.") and return
 
   end
 
@@ -126,12 +135,12 @@ class InstancesController < ApplicationController
     if message
       flash.now[:notice] = message
     end
-    render :template => "api/response" and return
+    render :template => "api/response" 
   end
 
   def api_render_error(message)
     flash.now[:error] = message
-    render :template => "api/response" and return
+    render :template => "api/response" 
   end
 
   def check_token
@@ -141,13 +150,16 @@ class InstancesController < ApplicationController
 
     if @instance.nil?
       flash.now[:error] = "A valid instance ID must be specified: #{params[:id]} was not found"
-      render :template => "api/response" and return
+      return false
     end
 
     if params[:access_token].nil? or @instance.access_token != params[:access_token]
       flash.now[:error] = "Invalid access token"
-      render :template => "api/response" and return
+      return false
     end
+
+    return true 
+
   end
 
   def current_objects(params={})
