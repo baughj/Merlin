@@ -179,6 +179,7 @@ class Instance < ActiveRecord::Base
     return true
   end
 
+  
   def update_from_api(update_volumes=true)
     # Update our local information on an instance from the API.
 

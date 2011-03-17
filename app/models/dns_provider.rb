@@ -21,6 +21,21 @@
 #
 
 class DNSProvider < ActiveRecord::Base
+  include MerlinDnsHelper
+
   enum_attr :provider_type, %w(ultradns bind)
   has_many :clouds
+
+  def api_ready?
+    return !@connector.nil?
+  end
+
+  def connect
+    if not api_ready?
+      logger.info("Connecting to DNS provider #{api_url}")
+      connect_dns(identity, credential, api_url, api_usessl, provider_type)
+    end
+    return true
+  end
+
 end

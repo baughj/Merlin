@@ -47,11 +47,7 @@ class Cloud < ActiveRecord::Base
   }
 
   def api_ready?
-    if @connector
-      return true
-    else
-      return false
-    end
+    return !@connector.nil?
   end
 
   def get_api_error

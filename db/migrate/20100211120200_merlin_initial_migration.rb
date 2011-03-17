@@ -25,6 +25,7 @@ class MerlinInitialMigration < ActiveRecord::Migration
       t.column :record_ttl, :integer
       t.column :api_url, :string
       t.column :api_usessl, :string
+      t.column :create_a_record, :boolean
       t.column :created_at, :timestamp
       t.column :updated_at, :timestamp
     end
