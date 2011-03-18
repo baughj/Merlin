@@ -53,12 +53,17 @@ ActiveRecord::Schema.define(:version => 20100211120200) do
 
   create_table "dns_providers", :force => true do |t|
     t.string   "provider_type"
-    t.string   "username"
+    t.string   "name"
+    t.text     "description"
+    t.string   "identity"
     t.string   "credentials"
     t.string   "update_zone"
     t.integer  "record_ttl"
+    t.integer  "status_code"
+    t.string   "status_message"
     t.string   "api_url"
-    t.string   "api_usessl"
+    t.boolean  "api_usessl"
+    t.boolean  "create_a_record"
     t.datetime "created_at"
     t.datetime "updated_at"
   end

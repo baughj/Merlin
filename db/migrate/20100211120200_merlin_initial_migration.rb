@@ -19,6 +19,8 @@ class MerlinInitialMigration < ActiveRecord::Migration
 
     create_table :dns_providers do |t|
       t.enum :provider_type
+      t.column :name, :string
+      t.column :description, :text
       t.column :identity, :string
       t.column :credentials, :string
       t.column :update_zone, :string
@@ -26,7 +28,7 @@ class MerlinInitialMigration < ActiveRecord::Migration
       t.column :status_code, :integer
       t.column :status_message, :string
       t.column :api_url, :string
-      t.column :api_usessl, :string
+      t.column :api_usessl, :boolean
       t.column :create_a_record, :boolean
       t.column :created_at, :timestamp
       t.column :updated_at, :timestamp
