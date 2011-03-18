@@ -20,7 +20,7 @@
 # If not, see <http://www.gnu.org/licenses/>.
 #
 
-class DNSProvider < ActiveRecord::Base
+class DnsProvider < ActiveRecord::Base
   include MerlinDnsHelper
 
   enum_attr :provider_type, %w(ultradns bind)
