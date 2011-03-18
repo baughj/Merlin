@@ -10,6 +10,7 @@
     <table>
       <tr>
         <th>Provider Type</th>
+        <th>Name</th>
         <th>Server</th>
         <th>Zone</th>
         <th>Status</th>
@@ -17,10 +18,11 @@
       <% DnsProvider.all.each do |row| %>
       <tr>
         <td><%= row.provider_type %></td>
-        <td><%= row.server %></td>
-        <td><%= row.zone %></td>
+        <td><%= row.name %></td>
+        <td><%= row.api_url %></td>
+        <td><%= row.update_zone %></td>
         <td><%= row.status_message %></td>
-        <td><a href="/dnsproviders/edit/<%= data.id %>">Edit</a> | <a href="/dnsproviders/delete/<%= data.id %>">Delete</a> </td>
+        <td><a href="/dnsproviders/edit/<%= row.id %>">Edit</a> | <a href="/dnsproviders/delete/<%= row.id %>">Delete</a> </td>
       </tr>
       <% end %>
     </table>

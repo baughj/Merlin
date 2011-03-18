@@ -1,6 +1,8 @@
 <html>
   <head>
     <%= formtastic_stylesheet_link_tag %>
+    <%= stylesheet_link_tag "merlin" %>
+
     <title>DNS Provider</title>
   </head>
   <body>
@@ -10,18 +12,21 @@
     </p>
     <% semantic_form_for @dnsprovider do |form| %>
       <% form.inputs do %>
-        <%= form.input :provider_type, :label => "Provider Type", :hint => "What type of DNS provider are you adding?", :required => true %>
-        <%= form.input :identity, :label => "Identity / Username", :hint => "For UltraDNS, this is the API username; for BIND, this is the name of the TSIG key.", :required => true %>
-        <%= form.input :credentials, :label => "Credentials / Password", :hint => "For UltraDNS: API password, for BIND: the TSIG key.", :required => true %>
-        <%= form.input :update_zone, :label => "Zone", :hint => "What zone should this provider update? (e.g. cloud.bar.com)", :required => true %>
-        <%= form.input :record_ttl, :label => "TTL", :hint => "TTL for new records", :required => true %>
+        <%= form.input :provider_type, :as => :enum, :include_blank => false, :label => "Provider Type", :hint => "The type of provider (e.g. BIND or UltraDNS)", 
+          :required => true %>
+        <%= form.input :name, :label => "Provider Name", :hint => "The name of this provider", :input_html => { :class => "med" }, :required => true %>
+        <%= form.input :identity, :label => "Key Name / Username", :hint => "For UltraDNS, this is the API username; for BIND, this is the name of the TSIG key.", 
+        :required => true, :input_html => { :class => "med" } %>
+        <%= form.input :credentials, :label => "Key / Password", :hint => "For UltraDNS, this is the API password; for BIND, the actual TSIG key.", 
+        :required => true, :input_html => { :class => "med" } %>
+        <%= form.input :update_zone, :label => "Zone", :hint => "What zone should this provider update? (e.g. cloud.bar.com)", 
+        :required => true, :input_html => { :class => "med" } %>
+        <%= form.input :record_ttl, :label => "TTL", :hint => "TTL for new records", :required => true, :input_html => { :class => "sm" } %>
         <%= form.input :api_url, :label => "API URL / nameserver", :hint => "The API URL or nameserver that should be used for updates", :required => true %>
-        <%= form.input :api_usessl, :label => "Use SSL", :hint => "For HTTP APIs, should SSL be used?", :required => true %>
-        <%= form.input :create_a_record, :label => "Create A records?", :hint => "Should Merlin create A records to public IP addresses? If false, CNAMEs will be used (this is better for EC2).", :required => true %>
-
-        <%= form.input :name, :label => "Script Name", :hint => "A name for this script", :required => true %>
-        <%= form.input :description, :label => "Description", :hint => "A brief description of the script", :required => false %>
-        <%= form.input :script, :label => "Script Contents", :hint => "The script itself", :required => true %>
+        <%= form.input :description, :label => "Description", :hint => "An optional description of this provider", :required => false,
+        :input_html => { :class => "med" } %>
+        <%= form.input :api_usessl, :label => "Use SSL? (no impact for BIND)", :required => false %>
+        <%= form.input :create_a_record, :label => "Create A records? (Uncheck this for EC2, in which case, CNAMEs will be used)", :required => false %>
       <% end %>
       <% form.buttons do %>
         <%= form.commit_button "Save" %>

@@ -12,6 +12,7 @@
     <%= form.input :api_usessl, :label => "Use SSL", :default => true, :required => false %>
     <%= form.input :query_key, :label => "API Query Key", :hint => "The query key to be used for API authentication", :required => true %>
     <%= form.input :query_key_id, :label => "API Query Key ID", :hint => "The query key ID to be used for API authentication", :required => true %> 
+    <%= form.input :dns_provider, :label => "DNS Provider", :hint => "A DNS provider to be used with this cloud", :required => false %>
     <% end %>
     <% form.inputs :name => "Puppet Options", :id => "advanced" do %>
     <%= form.input :puppet_server, :label => "Puppet Server", :hint => "The hostname of the puppet server (must be accessible from within the cloud)", :required => false %>
