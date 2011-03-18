@@ -23,6 +23,8 @@ class MerlinInitialMigration < ActiveRecord::Migration
       t.column :credentials, :string
       t.column :update_zone, :string
       t.column :record_ttl, :integer
+      t.column :status_code, :integer
+      t.column :status_message, :string
       t.column :api_url, :string
       t.column :api_usessl, :string
       t.column :create_a_record, :boolean

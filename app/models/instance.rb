@@ -138,7 +138,11 @@ class Instance < ActiveRecord::Base
   end
 
   def update_dns
-
+    # Update our DNS information.
+    if cloud.dns_provider.nil?
+      return false
+    end
+    cloud.dns_provider.update_dns_for_instance(self)
   end
 
   def update_properties(i_info)

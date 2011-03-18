@@ -72,9 +72,9 @@ module MerlinApiHelper
     end
     return true
   end
-  
+
   def api_request(function, render_failure_xml, *args)
-    
+
     if not @connector then
       # Classes which include this mixin can define a connect function which will be used
       # for class-specific connection info, e.g. Cloud defines a connect function that 

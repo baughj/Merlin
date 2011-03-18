@@ -38,4 +38,45 @@ class DNSProvider < ActiveRecord::Base
     return true
   end
 
+  def update_dns_for_instance(instance)
+    # This needs to be expanded to correctly handle public/private dns,
+    # at the moment it does what I need it to do.
+    connect
+    if create_a_record?
+      create_dns_record(instance.hostname, instance.ip_address)
+    else
+      create_dns_record(instance.hostname, instance.dns_name, true)
+    end
+  end
+
+  def create_dns_record(hostname, target, is_alias=false)
+    # We do a couple of checks here.
+    # 1) If the hostname doesn't contain any elements in common with our zone,
+    # we submit an update for shortname.zone (e.g. foo.bar.baz -> quux.com would become
+    # foo.quux.com)
+
+    parts = hostname.split('.')
+    shortname, domain = parts.slice!(0), parts
+
+    if (domain | update_zone.split('.')).length == 0:
+        hostname = "#{shortname}.#{update_zone}"
+    end
+
+    if is_alias
+      @resp = dns_request(:create_alias, hostname, target, record_ttl)
+    else
+      @resp = dns_request(:create_cname, hostname, target, record_ttl)
+    end
+
+    if @resp.nil?
+      self.status_code = STATUS['error']
+      self.status_message = "DNS provider reported error: #{@dns_error}"
+      self.save
+      return false
+    end
+
+    return true
+  end
+
 end
+

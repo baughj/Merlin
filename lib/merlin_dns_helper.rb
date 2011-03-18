@@ -43,28 +43,19 @@ module MerlinDnsHelper
 
   end
 
-  def dns_create_record(hostname, ip_address, commit)
-    check_connection
+  def dns_request(function, *args)
+    if @connector.nil?
+      self.send(:connect)
+      if @connector.nil?
+        raise RuntimeError, "You must connect to a DNS endpoint first."
+      end
+    end
 
-    if !@dns_connector.create_record(hostname, ip_address)
-      self.cloud.status_message = get_dns_error
+    begin
+      resp = @connector.send(function, args)
+    rescue Exception => exc
+      logger.error "DNS API endpoint call #{function} reported error: " + exc
+      @dns_error = exc
     end
   end
-
-  def dns_delete_record(hostname)
-    check_connection
-
-    if !@dns_connector.delete_record(hostname)
-      self.cloud.status_message = get_dns_error
-    end
-  end
-
-  private
-
-  def check_connection
-    if @dns_connector.nil?
-      raise RuntimeError, "You need to connect first."
-    end
-  end
-
 end

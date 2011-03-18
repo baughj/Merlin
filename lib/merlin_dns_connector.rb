@@ -169,27 +169,23 @@ module MerlinDnsConnector
       @tsig_key = tsig_key
     end
 
-    def get_error
-      @dns_error
-    end
-
     def create_alias(hostname, target, ttl)
       prepare_update
       @update.add(hostname, Dnsruby::Types.A, ttl, target)
-      return send_update
+      @res.send_message(@update)
     end
 
-    def create_cname(hostname, target)
+    def create_cname(hostname, target, ttl)
       prepare_update
       @update.add(hostname, Dnsruby::Types.CNAME, ttl, target)
-      return send_update
+      @res.send_message(@update)
     end
 
     # Warning: At the moment, this will delete *all* entries. This will change in the future.
     def delete_record(hostname)
       prepare_update
       @update.delete(hostname)
-      return send_update
+      @res.send_message(@update)
     end
 
     private
@@ -209,17 +205,6 @@ module MerlinDnsConnector
       if @update.nil?
         @update = Dnsruby::Update.new(zone)
       end
-    end
-
-    def send_update
-      begin
-        return @res.send_message
-      rescue Exception => e
-        @dns_error = "DNS update error: #{e}"
-        logger.error('DNS update error: #{e}')
-        return false
-      end
-      return true
     end
 
   end
