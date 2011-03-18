@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <title>DNS Providers</title>
+  </head>
+  <body>
+    <p>
+      Here, you can manage DNS providers, which can be used with clouds to automatically manage DNS across the lifecycle of an instance.
+    </p>
+    <a href="/dnsproviders/new">Create a new DNS provider</a>
+    <table>
+      <tr>
+        <th>Provider Type</th>
+        <th>Server</th>
+        <th>Zone</th>
+        <th>Status</th>
+      </tr>
+      <% DnsProvider.all.each do |row| %>
+      <tr>
+        <td><%= row.provider_type %></td>
+        <td><%= row.server %></td>
+        <td><%= row.zone %></td>
+        <td><%= row.status_message %></td>
+        <td><a href="/dnsproviders/edit/<%= data.id %>">Edit</a> | <a href="/dnsproviders/delete/<%= data.id %>">Delete</a> </td>
+      </tr>
+      <% end %>
+    </table>
+  </body>
+</html>

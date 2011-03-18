@@ -47,4 +47,5 @@ ActionController::Routing::Routes.draw do |map|
   map.resources :instance_types
   map.resources :instances
   map.resources :availability_zones
+  map.resources :dns_providers
 end

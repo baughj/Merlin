@@ -19,7 +19,7 @@ class MerlinInitialMigration < ActiveRecord::Migration
 
     create_table :dns_providers do |t|
       t.enum :provider_type
-      t.column :username, :string
+      t.column :identity, :string
       t.column :credentials, :string
       t.column :update_zone, :string
       t.column :record_ttl, :integer
