@@ -1,5 +1,7 @@
+require 'ultradns4r'
+
 module MerlinDnsConnector
-  class MerlinUltraDNSConnector
+  class MerlinUltraDnsConnector
 
     # This won't work. At all. It needs to be refactored.
 
@@ -64,9 +66,9 @@ module MerlinDnsConnector
       Rails.logger.info('[UltraDNS] Deleting hostname %s' % hostname)
 
       resp = @connector.soap_call('get_resource_records_of_dname_by_type!',
-                                      {'zoneName' => APP_CONFIG[:ultrazone],
-                                        'hostName' => hostname,
-                                      'rrType' => UltraDns::Client.get_rr_type_id('A')})
+                                  {'zoneName' => APP_CONFIG[:ultrazone],
+                                    'hostName' => hostname,
+                                    'rrType' => UltraDns::Client.get_rr_type_id('A')})
 
       record = resp.to_hash[:get_resource_records_of_d_name_by_type_response][:resource_record_list][:resource_record]
 
@@ -115,7 +117,7 @@ module MerlinDnsConnector
       return false
     else
       @transaction_id = resp.to_hash[:start_transaction_response][:transaction_id]
-        @transaction_count = 0
+      @transaction_count = 0
     end
 
     Rails.logger.info "[UltraDNS] Starting transaction %s" % @transaction_id
@@ -124,24 +126,23 @@ module MerlinDnsConnector
   def end_transaction
     Rails.logger.info "[UltraDNS] Committing transaction..."
 
-      if not @connector or not @transaction_id
-        return false
-      end
+    if not @connector or not @transaction_id
+      return false
+    end
 
     @connector.soap_call('commit_transaction!', {"transactionID" => @transaction_id})
 
     if @connector.error
       Rails.logger.error "[UltraDNS] Failed to commit transaction %s: %s" % [@transaction_id,
                                                                              @connector.error]
-        @connector.soap_call('rollback_transaction!', {"transactionID" => @transaction_id})
+      @connector.soap_call('rollback_transaction!', {"transactionID" => @transaction_id})
       if @connector.error
         Rails.logger.error "[UltraDNS] Failed to rollback uncommittable transaction %s: %s" % [@transaction_id,
                                                                                                @connector.error]
       end
-        @transaction_id = nil
+      @transaction_id = nil
       return false
     end
-
     Rails.logger.info "[UltraDNS] Committed transaction with ID %s" % @transaction_id
     @transaction_id = nil
     return true
@@ -151,22 +152,31 @@ module MerlinDnsConnector
     infovalues = {}
     data.each do |value|
       infovalues['Info' + (infovalues.length + 1).to_s + 'Value'] = value
-      end
+    end
     return infovalues
   end
 
-  class MerlinBINDConnector
+  class MerlinBindConnector
 
     attr_accessor :server, :zone, :tsig_keyname, :tsig_key
 
     # Feel free to hack this to make it dynamic.
     DEFAULT_ALGORITHM = 'HMAC-SHA1'
 
-    def initialize(server, zone, tsig_keyname, tsig_key)
-      @server = server
-      @zone = zone
-      @tsig_keyname = tsig_keyname
-      @tsig_key = tsig_key
+    def initialize(options)
+      {:server => nil,
+        :zone => nil,
+        :tsig_keyname => nil,
+        :tsig_key => nil}.merge(options)
+
+      [:server, :zone, :tsig_keyname, :tsig_key].each do |o|
+        if !o.nil?
+          self.instance_variable_set "@#{o.to_s}", options[o]
+        else
+          raise ArgumentError, "Required argument #{o} was not specified."
+        end
+      end
+
     end
 
     def create_alias(hostname, target, ttl)
@@ -195,7 +205,8 @@ module MerlinDnsConnector
                                        :klass => Dnsruby::Classes.ANY,
                                        :name => @tsig_keyname,
                                        :key => @tsig_key,
-                                       :alg => DEFAULT_ALGORITHM)
+                                       :algorithm => DEFAULT_ALGORITHM)
+    end
 
     def prepare_update
       if @res.nil?

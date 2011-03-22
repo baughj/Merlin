@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require "ultradns4r"
-
 module MerlinDnsHelper
 
   class DNSRecordNotFound < Exception
@@ -26,17 +24,20 @@ module MerlinDnsHelper
   class DNSUpdateFailure < Exception
   end
 
-  def connect_dns(identity, credential, api_url, api_usessl, provider_type)
+  def connect_dns(zone, identity, credential, api_url, api_usessl, provider_type)
 
-    if provider_type == 'ultradns' then
-      @dns_connector = MerlinDNSConnectors::MerlinUltraDNSConnector.new(:username => identity,
-                                                                        :password => credential,
-                                                                        :api_url => api_url,
-                                                                        :api_usessl => true)
-    elsif provider_type == 'bind' then
-      @dns_connector = MerlinDNSConnectors::MerlinBINDConnector.new(:tsig_keyname => identity,
-                                                                    :tsig_key => credential,
-                                                                    :server => api_url)
+    if provider_type == :ultradns then
+      @dns_connector = MerlinDnsConnector::MerlinUltraDnsConnector.new(:zone => zone, 
+                                                                       :username => identity,
+                                                                       :password => credential,
+                                                                       :api_url => api_url,
+                                                                       :api_usessl => true)
+    elsif provider_type == :bind then
+      @dns_connector = MerlinDnsConnector::MerlinBindConnector.new(:zone => zone,
+                                                                   :tsig_keyname => identity,
+                                                                   :tsig_key => credential,
+                                                                   :server => api_url)
+
     else
       raise RuntimeError, "Unsupported provider type #{provider_type}"
     end
@@ -44,18 +45,20 @@ module MerlinDnsHelper
   end
 
   def dns_request(function, *args)
-    if @connector.nil?
+    if @dns_connector.nil?
       self.send(:connect)
-      if @connector.nil?
+      if @dns_connector.nil?
         raise RuntimeError, "You must connect to a DNS endpoint first."
       end
     end
 
+
     begin
-      resp = @connector.send(function, args)
+      resp = @dns_connector.send(function, *args)
     rescue Exception => exc
       logger.error "DNS API endpoint call #{function} reported error: " + exc
       @dns_error = exc
     end
+    return true
   end
 end
