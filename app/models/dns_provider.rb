@@ -26,6 +26,12 @@ class DnsProvider < ActiveRecord::Base
   enum_attr :provider_type, %w(ultradns bind)
   has_many :clouds
 
+  STATUS = {'error' => -1,
+    'ready' => 0,
+    'active' => 1}
+
+  STATUS_REVERSE = STATUS.invert
+
   def api_ready?
     return !@connector.nil?
   end
@@ -33,7 +39,7 @@ class DnsProvider < ActiveRecord::Base
   def connect
     if not api_ready?
       logger.info("Connecting to DNS provider #{api_url}")
-      connect_dns(identity, credential, api_url, api_usessl, provider_type)
+      connect_dns(update_zone, identity, credentials, api_url, api_usessl, provider_type)
     end
     return true
   end
@@ -42,6 +48,7 @@ class DnsProvider < ActiveRecord::Base
     # This needs to be expanded to correctly handle public/private dns,
     # at the moment it does what I need it to do.
     connect
+
     if create_a_record?
       create_dns_record(instance.hostname, instance.ip_address)
     else
@@ -62,19 +69,17 @@ class DnsProvider < ActiveRecord::Base
         hostname = "#{shortname}.#{update_zone}"
     end
 
-    if is_alias
-      @resp = dns_request(:create_alias, hostname, target, record_ttl)
-    else
-      @resp = dns_request(:create_cname, hostname, target, record_ttl)
-    end
-
-    if @resp.nil?
+    if ! (is_alias ? dns_request(:create_alias, hostname, target, record_ttl) :
+        dns_request(:create_cname, hostname, target, record_ttl))
       self.status_code = STATUS['error']
       self.status_message = "DNS provider reported error: #{@dns_error}"
       self.save
       return false
     end
 
+    self.status_code = STATUS['active']
+    self.status_message = "Last successful update: #{hostname}"
+    self.save
     return true
   end
 
