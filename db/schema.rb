@@ -66,6 +66,7 @@ ActiveRecord::Schema.define(:version => 20100211120200) do
     t.boolean  "create_a_record"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.integer  "cloud_id"
   end
 
   create_table "instance_types", :force => true do |t|

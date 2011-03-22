@@ -32,6 +32,7 @@ class MerlinInitialMigration < ActiveRecord::Migration
       t.column :create_a_record, :boolean
       t.column :created_at, :timestamp
       t.column :updated_at, :timestamp
+      t.references :cloud
     end
 
     create_table :clouds do |t|
