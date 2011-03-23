@@ -118,7 +118,7 @@ PUPPET_PID=$!
 echo $PUPPET_PID > /var/log/$TAG/puppet.pid
 sleep 5
 
-wget "$MERLIN_API_ENDPOINT/api/i/$ID/puppet_signkey&access_token=$ACCESS_TOKEN" -O /var/log/$TAG/signkey.log
+wget "$MERLIN_API_ENDPOINT/api/i/$ID/puppet_signcert&access_token=$ACCESS_TOKEN" -O /var/log/$TAG/signkey.log
 
 # We will wait a maximum of ten minutes for puppet to finish, then we assume
 # something is amiss

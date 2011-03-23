@@ -126,7 +126,7 @@ class InstancesController < ApplicationController
 
   end
 
-  def puppet_signkey
+  def puppet_signcert
     if !check_token
       api_render_error and return
     end
