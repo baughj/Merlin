@@ -73,13 +73,12 @@ class InstancesController < ApplicationController
       end
     end
   end
-  
+
   def attach_storage 
-    
     if !check_token
       api_render_error and return
     end
-    
+
     if @instance.running?
       if @instance.volumes.length == 0
         api_render_success("No volumes needed to be attached.") and return
@@ -97,7 +96,6 @@ class InstancesController < ApplicationController
   end
 
   def hello
-      
     if !check_token
       api_render_error and return
     end
@@ -128,6 +126,16 @@ class InstancesController < ApplicationController
 
   end
 
+  def puppet_signkey
+    if !check_token
+      api_render_error and return
+    end
+
+    publish :instance_requested_puppet_certificate, 
+    {'merlin_instance_id' => @instance.id}.to_json
+
+    api_render_success("Requesting signature for #{@instance.hostname}")
+  end
 
   protected
 

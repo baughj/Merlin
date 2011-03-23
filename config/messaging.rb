@@ -1,5 +1,6 @@
 ActiveMessaging::Gateway.define do |s|
   s.destination :instance_requested_reservation, '/queue/MerlinInstanceRequestedReservation'
+  s.destination :instance_requested_puppet_certificate, '/queue/MerlinInstanceRequestedPuppetCertificate'
   s.destination :instance_requested_attach_volume, '/queue/MerlinInstanceRequestedAttachVolume'
   s.destination :instance_requested_detach_volume, '/queue/MerlinInstanceRequestedDetachVolume'
   s.destination :instance_requested_attach_address, '/queue/MerlinInstanceRequestedAttachAddress'
