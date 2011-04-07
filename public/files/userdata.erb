@@ -20,53 +20,80 @@
 #
 
 HOSTNAME='<%= hostname %>'
-MERLIN_API_ENDPOINT='https://merlin.tld/'
+MERLIN_API_ENDPOINT='https://merlin.tld'
 ACCESS_TOKEN='<%= access_token %>'
-INSTANCE_ID='<%= instance_id %>'
+INSTANCE_ID=`wget http://169.254.169.254/latest/meta-data/instance-id -q -O -`
 
 # Default filesystem that will be used for new devices, if none is specified.
 DEFAULT_FS='ext3'
 
 # A tag that will be used for logging and configuration. The script will create
 # /etc/$TAG and /var/log/$TAG.
+TAG='yourtag'
 
-TAG='tld'
+# The command to be used to make API requests.
+FETCH='curl -k -D - -o -'
 
-if [ -d /etc/$TAG] || [ -d /var/log/$TAG ]; then
+# The entry that will be added to /etc/hosts as a failsafe for Puppet resolution.
+# Whatever you put here will be appended to /etc/hosts.
+PUPPET_SERVER_HOSTS_ENTRY='1.2.3.4 puppet.tld puppet'
+
+### Only modify below here if you know what you're doing ###
+
+# Abort on any errors and log exactly what it is we try to do
+set -e -x
+
+if [ -d /etc/$TAG/control/userdata-complete ] || [ -d /var/log/$TAG ]; then
     echo "ERROR: Looks like this script has been run before. If you really want"
-    echo "to run it again, remove /etc/$TAG and /var/log/$TAG ."
+    echo "to run it again, remove /etc/$TAG/control/userdata-complete and /var/log/$TAG ."
     exit -1
 fi
 
-set -e -x
+function api_request {
+    set +e
+    # Make an API request and check the return. We do this instead of
+    # using the normal wget/curl way because both won't exit with a
+    # nonzero code AND save the output of a response that has a 5xx
+    # status code.
+    echo "API request: $1"
+    $FETCH $2 > /var/log/$TAG/$1.log
+    head -1 /var/log/$TAG/$1.log | grep -q 200
+    if [[ "$?" != 0 ]];
+    then
+	echo "ERROR: API call $1 returned error. Check the logs in /var/log/$TAG."
+	# Make a last ditch attempt to request help
+	$FETCH "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/notify?access_token=$ACCESS_TOKEN&condition=apierror" 
+	exit -1
+    fi
+    echo "API request: success"
+    set -e
+}
+
+# Make our log directory
 mkdir -p /var/log/$TAG
+
+# Log everything to the startup logfile
 exec > /var/log/$TAG/startup.log
 exec 2>&1
 
-# First, a sanity check...
-REPORTED_ID=`wget http://169.254.169.254/latest/meta-data/instance-id -q -O -`
-
-if [ "$INSTANCE_ID" != "$REPORTED_ID" ]; then
-    wget "$MERLIN_API_ENDPOINT/api/i/$ID/intervene&access_token=$ACCESS_TOKEN&condition=idmismatch" 
-    echo "ERROR: My instance ID should be $INSTANCE_ID but is reported as $REPORTED_ID...?"
-    exit -1
-fi
-
 export DEBIAN_FRONTEND=noninteractive
-apt-get install augeas-tools augeas-lenses
+apt-get update && apt-get -q -yy dist-upgrade
+apt-get -q -yy install augeas-tools augeas-lenses
 
 shadowconfig on
-echo '127.0.0.1 localhost' > /etc/hosts
-echo '1.2.3.4 puppet.tld puppet' >> /etc/hosts
 
-echo $HOSTNAME > /etc/hostname
+echo '127.0.0.1 localhost' > /etc/hosts
+echo $PUPPET_SERVER_HOSTS_ENTRY >> /etc/hosts
+
+echo "$HOSTNAME" > /etc/hostname
 hostname -F /etc/hostname
+/etc/init.d/rsyslog restart
 
 # Introduce ourselves to Merlin, or notify it that we're alive
-wget "$MERLIN_API_ENDPOINT/api/i/$ID/hello?hostname=$HOSTNAME&access_token=$ACCESS_TOKEN" -O /var/log/$TAG/hello.log
+api_request hello "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/hello?hostname=$HOSTNAME&access_token=$ACCESS_TOKEN"
 
 # Ask Merlin to attach any additional storage that has been provisioned
-wget "$MERLIN_API_ENDPOINT/api/i/$ID/attach_storage&access_token=$ACCESS_TOKEN" -O /var/log/$TAG/attachstorage.log
+api_request attach_storage "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/attach_storage?access_token=$ACCESS_TOKEN"
 
 echo "Processing volume configuration..."
 <% for vol in volumes %>
@@ -96,17 +123,20 @@ mkfs -F -t $<%= vol_id %>_FS $<%= vol_id %>_DEVICE
 # Now, make an augeas file that will update our fstab appropriately.
 cat <<EOF /etc/$TAG/fstab.augeas.<%= vol.volume_id %>
 defvar fstab /files/etc/fstab
-set $fstab/01/spec $<%= vol_id %>_DEVICE
-set $fstab/01/file <%= vol.mount_point %>
-set $fstab/01/vfstype $<%= vol_id %>_FS
-set $fstab/01/opt[0] defaults
-set $fstab/01/dump 0
-set $fstab/01/passno 0
+set \$fstab/01/spec $<%= vol_id %>_DEVICE
+set \$fstab/01/file <%= vol.mount_point %>
+set \$fstab/01/vfstype $<%= vol_id %>_FS
+set \$fstab/01/opt[0] defaults
+set \$fstab/01/dump 0
+set \$fstab/01/passno 0
 save
 EOF
 
 # Hopefully update fstab with our shiny new augeas file.
 augtool < /etc/$TAG/fstab.augeas.<%= vol.volume_id %> 1>&2 2> /var/log/$TAG/augeas.log
+
+# Lastly, mount the volume.
+mount <%= vol.mount_point %>
 <% else %>
 echo "Not dealing with volume <%= vol.attachment_device %>, mount point <%= vol.mount_point %> - flagged as root device"
 <% end %>
@@ -118,10 +148,10 @@ PUPPET_PID=$!
 echo $PUPPET_PID > /var/log/$TAG/puppet.pid
 sleep 5
 
-wget "$MERLIN_API_ENDPOINT/api/i/$ID/puppet_signcert&access_token=$ACCESS_TOKEN" -O /var/log/$TAG/signkey.log
+api_request signcert "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/puppet_signcert?access_token=$ACCESS_TOKEN"
 
 # We will wait a maximum of ten minutes for puppet to finish, then we assume
-# something is amiss
+# something is amiss (this section probably needs some work)
 
 TIMEOUT=600
 count=0
@@ -134,10 +164,12 @@ done
 
 if [ -d "proc/$PUPPET_PID" ];
 then
-    wget "$MERLIN_API_ENDPOINT/api/i/$ID/intervene&access_token=$ACCESS_TOKEN&condition=puppetlongrunning" 
+    $FETCH "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/notify?access_token=$ACCESS_TOKEN&condition=puppetlongrunning" 
 else
-    wget "$MERLIN_API_ENDPOINT/api/i/$ID/complete&access_token=$ACCESS_TOKEN"
+    $FETCH "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/complete?access_token=$ACCESS_TOKEN"
 fi
+
+touch /etc/$TAG/control/userdata-complete
 
 echo "Provisioning complete!"
 
