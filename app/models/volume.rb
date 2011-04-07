@@ -58,7 +58,7 @@ class Volume < ActiveRecord::Base
   def get_error 
     return @volume_error
   end
-
+    
   def exists?
     if volume_id.nil?
       return false
@@ -68,11 +68,11 @@ class Volume < ActiveRecord::Base
   end
 
   def available?
-   return status == STATUS['available']
+   return status_code == STATUS['available']
   end
 
   def attached?
-    return status == STATUS['in-use']
+    return attachment_status_code == STATUS['in-use']
   end
 
   def update_attachment_properties(a_info)
@@ -149,7 +149,7 @@ class Volume < ActiveRecord::Base
     end
 
     resp = cloud.api_request(:detach_volume, false, :volume_id => volume_id,
-                             :instance_id => instance_id,
+                             :instance_id => instance.instance_id,
                              :device => attachment_device)
     if !resp
       @volume_error = "Volume could not be attached: #{cloud.get_api_error}"
@@ -171,19 +171,18 @@ class Volume < ActiveRecord::Base
       @volume_error = "This volume is not available. Status is #{STATUS_REVERSE[status_code]}, should be available."
     end
 
-    if cloud.cloud_type.support_multiple_ebs_volumes?
-
+    if cloud.cloud_type.support_multiple_ebs_volumes? ? true : !instance.attached_volumes?
       if !cloud.api_request(:attach_volume, false, :volume_id => volume_id,
-                            :instance_id => instance_id,
+                            :instance_id => instance.instance_id,
                             :device => attachment_device)
         @volume_error = "Volume could not be attached: #{cloud.get_api_error}"
         return false
       end
+      return true
     else
       raise RuntimeError, "Cloud type doesn't allow attachment of multiple volumes - detach existing volumes first."
     end
 
-    return true
   end
 
   def reserve
@@ -200,14 +199,14 @@ class Volume < ActiveRecord::Base
       return false
     end
 
-    if !availability_zone.nil?
+    if availability_zone.nil?
       if !instance
         @volume_error = "The availability zone for this storage could not be determined."
         return false
       else
-        availability_zone = instance.availability_zone
+        self.availability_zone = instance.availability_zone
+        self.save
       end
-      self.save
     end
 
     resp = cloud.api_request(:create_volume, false,
