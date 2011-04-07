@@ -8,7 +8,7 @@ namespace :merlin do
 
   task :loadsiteuserdata => :environment do
     u = Userdata.new
-    f = File.open("public/files/site-userdata.erb").read
+    f = File.open("config/site-userdata.erb").read
     u.script = f
     u.name = "userdata-sitedefault"
     u.description = "The default site userdata script."
