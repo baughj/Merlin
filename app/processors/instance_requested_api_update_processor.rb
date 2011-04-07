@@ -33,6 +33,12 @@ class InstanceRequestedApiUpdateProcessor < ApplicationProcessor
     if instance.nil?
       logger.error("Couldn't locate instance with object id #{message.merlin_instance_id}...?")
     end
-    instance.update_from_api
+    if hash.has_key? 'update_type' and hash['update_type'] == "metadata"
+      logger.info("Metadata update requested for instance #{instance.instance_id}")
+      instance.update_from_api(false)
+    else
+      logger.info("Full update requested for instance #{instance.instance_id}")
+      instance.update_from_api
+    end
   end
 end

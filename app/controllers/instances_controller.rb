@@ -35,6 +35,11 @@ class InstancesController < ApplicationController
       @instance.status_code = Instance::STATUS['requested']
       @instance.status_message = "Submitted creation request to Merlin."    
       @instance.save
+      @instance.volumes.each do |vol|
+        vol.cloud = @instance.cloud
+        vol.availability_zone = @instance.availability_zone
+        vol.save
+      end
       flash[:notice] = "Instance request submitted."
       render :action => "index" and return
     else
@@ -84,8 +89,8 @@ class InstancesController < ApplicationController
         api_render_success("No volumes needed to be attached.") and return
       end
       @instance.volumes.each do |v|
-        if !v.request_attachment
-          api_render_error("Error: Volume #{v.volume_id} reported #{v.get_attachment_error}") and return
+        if !v.attach
+          api_render_error("Error: Volume #{v.volume_id} reported #{v.get_error}") and return
         end
       end
       attachments = @instance.volumes.map { |v| v.volume_id}.to_sentence
@@ -119,7 +124,7 @@ class InstancesController < ApplicationController
     @instance.needs_api_update = true
     @instance.save
 
-    publish :instance_requested_api_update, {'merlin_instance_id' => @instance.id}.to_json
+    publish :instance_requested_api_update, {'merlin_instance_id' => @instance.id, 'update_type' => :metadata}.to_json
     publish :instance_requested_dns_update, {'merlin_instance_id' => @instance.id}.to_json
 
     api_render_success("Instance #{@instance.instance_id} introduced to Merlin and queued for API/DNS update.") and return
@@ -143,12 +148,12 @@ class InstancesController < ApplicationController
     if message
       flash.now[:notice] = message
     end
-    render :template => "api/response" 
+    render :template => "instances/api_response" 
   end
 
   def api_render_error(message)
     flash.now[:error] = message
-    render :template => "api/response" 
+    render :template => "instances/api_response", :status => 500 
   end
 
   def check_token
