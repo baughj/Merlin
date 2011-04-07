@@ -3,7 +3,6 @@
     <%= javascript_include_tag "prototype" %>
     <%= formtastic_stylesheet_link_tag %>
     <%= stylesheet_link_tag "merlin" %>
-
   </head>
   <body>
     <p>Here, you can run new instances on any cloud Merlin controls.
@@ -24,6 +23,8 @@
         <% form.semantic_fields_for :volumes do |volume| %>
           <%= volume.input :size, :hint => "Size of the new volume, in gigabytes", :label => "Size (in GB)", :input_html => { :class => 'sm' } %>
           <%= volume.input :mount_point, :hint => "Where the volume will be mounted within the new instance", :input_html => { :class => 'med' } %>
+          <%= volume.input :attachment_device, :hint => "The device used to attach the volume to the instance (e.g. /dev/sdb)", :input_html => { :class => 'med' } %>
+          <%= volume.input :filesystem, :hint => "The filesystem that will be created on the new volume (mkfs must know about this, e.g. ext3)", :input_html => { :class => 'sm' } %>
           <%= volume.input :description, :hint => "A description of the new volume", :required => false, :input_html => { :class => 'med' } %>
         <% end %>
       <% end %>
