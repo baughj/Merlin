@@ -50,9 +50,9 @@ class DnsProvider < ActiveRecord::Base
     connect
 
     if create_a_record?
-      create_dns_record(instance.hostname, instance.ip_address)
+      create_dns_record(instance.hostname, instance.ip_address, true)
     else
-      create_dns_record(instance.hostname, instance.dns_name, true)
+      create_dns_record(instance.hostname, instance.dns_name)
     end
   end
 
