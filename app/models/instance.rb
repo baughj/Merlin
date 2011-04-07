@@ -108,6 +108,9 @@ class Instance < ActiveRecord::Base
     return [STATUS['pending'], STATUS['requested'], STATUS['reserved']].include? status_code
   end
 
+  def attached_volumes?
+    volumes.map {|v| v.attached?}.include? true
+  end
 
   def exists?
     # Has the instance been invoked (assigned a cloud instance ID, e.g. i-13371337)?
@@ -183,7 +186,6 @@ class Instance < ActiveRecord::Base
     return true
   end
 
-  
   def update_from_api(update_volumes=true)
     # Update our local information on an instance from the API.
 
