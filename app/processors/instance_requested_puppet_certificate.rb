@@ -20,8 +20,6 @@
 # If not, see <http://www.gnu.org/licenses/>.
 #
 
-require 'open4'
-
 class InstanceRequestedPuppetCertificateProcessor < ApplicationProcessor
 
   subscribes_to :instance_requested_puppet_certificate
@@ -43,18 +41,25 @@ class InstanceRequestedPuppetCertificateProcessor < ApplicationProcessor
     end
 
     begin
-      pid, stdin, stdout, stderr = open4.popen4("sudo #{instance.cloud.puppet_capath} -s #{instance.hostname}")
-      p, status = Process.waitpid2(pid)
-      if status.to_i != 0 then
+      # This next part makes a number of assumptions, which should probably be documented.
+      # Once the Puppet CA API is fully implemented, we'll use that instead.
+      # This code is also reckless and dangerous.
+      if instance.cloud.puppet_capath.nil?
+        ret = `sudo puppetca -s #{instance.hostname} 2>&1`
+      else
+        ret = `sudo #{instance.cloud.puppet_capath} -s #{instance.hostname} 2&>1`
+      end
+      if $?.exitstatus != 0
         instance.status_code = Instance::STATUS['error']
-        instance.status_message = "Couldn't sign puppet certificate: #{stderr.read()}"
+        instance.status_message = "Couldn't sign puppet certificate: check logs"
+        logger.error("Unknown error signing certificate for #{instance.hostname}: #{ret}"
       else
         instance.status_message = "Puppet CA signed certificate"
       end
     rescue Exception => exc
       instance.status_code = Instance::STATUS['error']
       instance.status_message = "Error signing puppet certificate: #{exc}"
-      logger.error('Unknown error signing certificate for #{instance.hostname}: #{exc}')
+      logger.error("Unknown error signing certificate for #{instance.hostname}: #{exc}")
       instance.save
     end
 
