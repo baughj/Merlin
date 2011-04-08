@@ -52,7 +52,7 @@ class InstanceRequestedPuppetCertificateProcessor < ApplicationProcessor
       if $?.exitstatus != 0
         instance.status_code = Instance::STATUS['error']
         instance.status_message = "Couldn't sign puppet certificate: check logs"
-        logger.error("Unknown error signing certificate for #{instance.hostname}: #{ret}"
+        logger.error("Unknown error signing certificate for #{instance.hostname}: #{ret}")
       else
         instance.status_message = "Puppet CA signed certificate"
       end
@@ -62,7 +62,7 @@ class InstanceRequestedPuppetCertificateProcessor < ApplicationProcessor
       logger.error("Unknown error signing certificate for #{instance.hostname}: #{exc}")
       instance.save
     end
-
+    
     instance.save
   end
 end
