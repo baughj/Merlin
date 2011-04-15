@@ -1,0 +1,85 @@
+puppet-longrunning:
+  name: puppetlongrunning
+  subject: "[Merlin] instance <%%= instance.hostname %> did not complete provisioning"
+  lang: en
+  template: |
+    Hello,
+
+    This is the Merlin instance associated with the cloud: <%%= instance.cloud.name %>.
+
+    This message is to inform you that the provisioning process on 
+    <%%= instance.hostname %> has not yet completed running, after ten minutes. 
+
+    This is normally an unusual case, and you may wish to investigate.
+
+    Hostname:     <%%= instance.hostname %>
+    Instance ID:  <%%= instance.instance_id %>
+    IP Addresses: <%%= instance.ip_address %> | <%%= instance.private_ip_address %>
+
+    Sincerely yours,
+
+    The Merlin System
+
+complete:
+  name: complete
+  lang: en
+  subject: "[Merlin] instance <%%= instance.hostname %> is ready for use"
+  template: |
+    Hello,
+    
+    This is the Merlin instance for <%%= instance.cloud.name %>. 
+    
+    This message is to inform you that your requested instance is ready for use!
+    
+    Hostname:     <%%= instance.hostname %>
+    Instance ID:  <%%= instance.instance_id %>
+    IP Addresses: <%%= instance.ip_address %> | <%%= instance.private_ip_address %>
+    
+    Sincerely yours,
+    
+    The Merlin System
+
+apierror:
+  name: apierror
+  lang: en
+  subject: "[Merlin] instance <%%= instance.hostname %> encountered an API error"
+  template: |
+    Hello,
+    This is the Merlin instance for <%%= instance.cloud.name %>. 
+    
+    This message is to inform you that an API error has occurred while
+    provisioning your instance. This can happen due to a bug in Merlin or a
+    misconfiguration. More information can likely be found in Merlin's logs.
+    
+    Hostname:     <%%= instance.hostname %>
+    Instance ID:  <%%= instance.instance_id %>
+    IP Addresses: <%%= instance.ip_address %> | <%%= instance.private_ip_address %>
+    
+    Status:       <%%= instance.status_message %>
+    
+    Sincerely yours,
+    
+    The Merlin System
+
+unknown-error:
+  name: unknownerror
+  lang: en
+  subject: "[Merlin] instance <%%= instance.hostname %> encountered unknown error!"
+  template: |
+    Hello,
+    
+    This is the Merlin instance for <%%= instance.cloud.name %>. 
+    
+    This message is to inform you that an unknown error has occurred while
+    provisioning your instance. More information can likely be found in
+    Merlin's logs, or on the instance filesystem itself in /var/log/merlin.
+    
+    Hostname:     <%%= instance.hostname %>
+    Instance ID:  <%%= instance.instance_id %>
+    IP Addresses: <%%= instance.ip_address %> | <%%= instance.private_ip_address %>
+    
+    Status:       <%%= instance.status_message %>
+    
+    Sincerely yours,
+
+    The Merlin System

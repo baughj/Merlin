@@ -30,6 +30,7 @@ ActiveMessaging::Gateway.define do |s|
   s.destination :instance_completed_termination, '/queue/MerlinInstanceCompletedTermination'
   s.destination :instance_completed_stop, '/queue/MerlinInstanceCompletedStop'
   s.destination :instance_completed_start, '/queue/MerlinInstanceCompletedStart'
+  s.destination :instance_send_notification, '/queue/MerlinInstanceSendNotification'
   s.destination :volume_requested_creation, '/queue/MerlinVolumeRequestedCreation'
   s.destination :volume_completed_creation, '/queue/MerlinVolumeCompletedCreation'
   s.destination :volume_requested_create_snapshot, '/queue/MerlinVolumeRequestedCreateSnapshot'

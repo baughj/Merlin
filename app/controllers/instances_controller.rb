@@ -34,16 +34,18 @@ class InstancesController < ApplicationController
       publish :instance_requested_reservation, {'merlin_instance_id' => @instance.id}.to_json
       @instance.status_code = Instance::STATUS['requested']
       @instance.status_message = "Submitted creation request to Merlin."    
-      @instance.save
       @instance.volumes.each do |vol|
+        logger.info('Setting volume cloud/az')
         vol.cloud = @instance.cloud
         vol.availability_zone = @instance.availability_zone
         vol.save
       end
+      @instance.save
       flash[:notice] = "Instance request submitted."
-      render :action => "index" and return
+      render :template => "merlin/index-new.erb" and return
     else
-      render :action => "new" and return 
+      flash[:error] = "Error saving instance"
+      render :template => "merlin/index-new.erb" and return 
     end
   end
   
@@ -140,6 +142,42 @@ class InstancesController < ApplicationController
     {'merlin_instance_id' => @instance.id}.to_json
 
     api_render_success("Requesting signature for #{@instance.hostname}")
+  end
+
+  def complete
+    if !check_token
+      api_render_error and return
+    end
+
+    @instance.status_code = Instance::STATUS['active']
+    @instance.status_message = "Instance completed userdata run"
+    @instance.save
+
+    publish :instance_send_notification, {'merlin_instance_id' => @instance.id,
+      'template_id' => NotificationTemplate.find_by_name('complete').id}.to_json
+    
+    api_render_success("Notification request queued.")
+  end
+
+  def notify
+    if !check_token
+      api_render_error and return
+    end
+
+    @instance.status_code = Instance::STATUS['error']
+    @instance.status_message = "Instance encountered error while running userdata script (#{params[:condition]})"
+    @instance.save
+
+    template = NotificationTemplate.find_by_name(params[:condition])
+    if template.nil?
+      api_render_error("Template #{params[:condition]} not found")
+    end
+
+    publish :instance_send_notification, {'merlin_instance_id' => @instance.id,
+      'template_id' => template.id}.to_json
+    
+    api_render_success("Notification request queued.")
+
   end
 
   protected
