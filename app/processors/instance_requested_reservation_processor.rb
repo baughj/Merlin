@@ -31,8 +31,10 @@ class InstanceRequestedReservationProcessor < ApplicationProcessor
     hash = ActiveSupport::JSON.decode(message) 
     instance = Instance.find_by_id(hash['merlin_instance_id'])
     if instance.nil?
-      logger.error("Couldn't locate instance with object id #{message.merlin_instance_id}...?")
+      logger.error("Could not locate instance with object id #{message.merlin_instance_id}...?")
+      return
     end
+
     if instance.instance_id then
       if instance.cloud.object_exists? instance.instance_id
         logger.error("Instance is already invoked..? Has a cloud identifier, #{instance.instance_id} - aborting")
@@ -42,6 +44,19 @@ class InstanceRequestedReservationProcessor < ApplicationProcessor
         logger.error("Instance #{instance.id} has instance ID #{instance.instance_id} but does not exist on API endpoint...?")
         instance.status_message = 'Error: Instance is a ghost!'
         instance.status_code = Instance::STATUS['ghost']
+      end
+      return
+    end
+    
+    # Make sure any volumes are reserved
+    
+    instance.volumes.each do |vol| 
+      logger.debug("Checking volume #{vol.id}, instance #{vol.instance.id}, cloud #{vol.cloud}")
+      if !vol.reserve
+        logger.error("Reservation of a requested volume was not successful: #{volume.get_error}")
+        instance.status_message = 'Error: Reservation of a requested volume was not successful: #{volume.get_error}'
+        instance.status_code = Instance::STATUS['error']       
+        return
       end
     end
 

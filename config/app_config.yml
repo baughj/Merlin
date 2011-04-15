@@ -1,5 +1,6 @@
 defaults: &defaults
-  version: 0.0.1
+  version: 0.1.0
+  merlin_email_address: merlin@yourtld
 
 development:
 <<: *defaults

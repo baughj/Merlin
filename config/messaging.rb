@@ -1,5 +1,6 @@
 ActiveMessaging::Gateway.define do |s|
   s.destination :instance_requested_reservation, '/queue/MerlinInstanceRequestedReservation'
+  s.destination :instance_requested_puppet_certificate, '/queue/MerlinInstanceRequestedPuppetCertificate'
   s.destination :instance_requested_attach_volume, '/queue/MerlinInstanceRequestedAttachVolume'
   s.destination :instance_requested_detach_volume, '/queue/MerlinInstanceRequestedDetachVolume'
   s.destination :instance_requested_attach_address, '/queue/MerlinInstanceRequestedAttachAddress'
@@ -29,6 +30,7 @@ ActiveMessaging::Gateway.define do |s|
   s.destination :instance_completed_termination, '/queue/MerlinInstanceCompletedTermination'
   s.destination :instance_completed_stop, '/queue/MerlinInstanceCompletedStop'
   s.destination :instance_completed_start, '/queue/MerlinInstanceCompletedStart'
+  s.destination :instance_send_notification, '/queue/MerlinInstanceSendNotification'
   s.destination :volume_requested_creation, '/queue/MerlinVolumeRequestedCreation'
   s.destination :volume_completed_creation, '/queue/MerlinVolumeCompletedCreation'
   s.destination :volume_requested_create_snapshot, '/queue/MerlinVolumeRequestedCreateSnapshot'

@@ -9,7 +9,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20100211120200) do
+ActiveRecord::Schema.define(:version => 20110408150041) do
 
   create_table "availability_zones", :force => true do |t|
     t.string   "name"
@@ -49,6 +49,7 @@ ActiveRecord::Schema.define(:version => 20100211120200) do
     t.boolean  "update_dns"
     t.integer  "dns_provider_id"
     t.integer  "cloud_type_id"
+    t.string   "puppet_capath"
   end
 
   create_table "dns_providers", :force => true do |t|
@@ -144,6 +145,24 @@ ActiveRecord::Schema.define(:version => 20100211120200) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.integer  "cloud_id"
+  end
+
+  create_table "notification_logs", :force => true do |t|
+    t.string   "recipient"
+    t.text     "notification"
+    t.boolean  "delivered"
+    t.integer  "instance_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "notification_templates", :force => true do |t|
+    t.string   "name"
+    t.string   "lang"
+    t.string   "subject"
+    t.text     "template"
+    t.datetime "created_at"
+    t.datetime "updated_at"
   end
 
   create_table "security_groups", :force => true do |t|

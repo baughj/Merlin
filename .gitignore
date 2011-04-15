@@ -1,5 +1,6 @@
 config/database.yml
 config/broker.yml
+config/site-userdata.erb
 log/*
 db/*.sqlite3
 *~
@@ -9,4 +10,4 @@ tmp/
 bootstrap.sql
 db/fixtures/clouds.yml
 db/fixtures/instance_types.yml
-public/files/site-userdata.erb
+

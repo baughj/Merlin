@@ -20,25 +20,34 @@
 # If not, see <http://www.gnu.org/licenses/>.
 #
 
-class InstanceRequestedApiUpdateProcessor < ApplicationProcessor
+class SendNotificationProcessor < ApplicationProcessor
 
-  subscribes_to :instance_requested_api_update
+  subscribes_to :instance_send_notification
 
   def on_message(message)
-    logger.info("Received request to update instance from API endpoint.")
-    logger.debug("Received message: #{message}")
+    logger.info("Received request to send an instance notification")
+    
+    hash = ActiveSupport::JSON.decode(message)
 
-    hash = ActiveSupport::JSON.decode(message) 
     instance = Instance.find_by_id(hash['merlin_instance_id'])
-    if instance.nil?
-      logger.error("Couldn't locate instance with object id #{message.merlin_instance_id}...?")
+    template = NotificationTemplate.find_by_id(hash['template_id'])
+
+    if instance.nil? or template.nil?
+      logger.error("Could not locate instance or template: instance id #{hash['merlin_instance_id']}, template id #{hash['template_id']}")
+      return
     end
-    if hash.has_key? 'update_type' and hash['update_type'] == "metadata"
-      logger.info("Metadata update requested for instance #{instance.instance_id}")
-      instance.update_from_api(false)
-    else
-      logger.info("Full update requested for instance #{instance.instance_id}")
-      instance.update_from_api
+
+    text = template.process(binding)
+
+    begin
+      e = EmailNotifier.create_send_notification(instance.cloud.notify_address,
+                                                 text['subject'],
+                                                 text['body'])
+      
+      EmailNotifier.deliver(e)
+    rescue Exception => exc
+      logger.error("Error processing notification: #{exc}")
     end
+
   end
 end

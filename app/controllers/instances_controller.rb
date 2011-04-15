@@ -34,11 +34,18 @@ class InstancesController < ApplicationController
       publish :instance_requested_reservation, {'merlin_instance_id' => @instance.id}.to_json
       @instance.status_code = Instance::STATUS['requested']
       @instance.status_message = "Submitted creation request to Merlin."    
+      @instance.volumes.each do |vol|
+        logger.info('Setting volume cloud/az')
+        vol.cloud = @instance.cloud
+        vol.availability_zone = @instance.availability_zone
+        vol.save
+      end
       @instance.save
       flash[:notice] = "Instance request submitted."
-      render :action => "index" and return
+      render :template => "merlin/index-new.erb" and return
     else
-      render :action => "new" and return 
+      flash[:error] = "Error saving instance"
+      render :template => "merlin/index-new.erb" and return 
     end
   end
   
@@ -73,20 +80,19 @@ class InstancesController < ApplicationController
       end
     end
   end
-  
+
   def attach_storage 
-    
     if !check_token
       api_render_error and return
     end
-    
+
     if @instance.running?
       if @instance.volumes.length == 0
         api_render_success("No volumes needed to be attached.") and return
       end
       @instance.volumes.each do |v|
-        if !v.request_attachment
-          api_render_error("Error: Volume #{v.volume_id} reported #{v.get_attachment_error}") and return
+        if !v.attach
+          api_render_error("Error: Volume #{v.volume_id} reported #{v.get_error}") and return
         end
       end
       attachments = @instance.volumes.map { |v| v.volume_id}.to_sentence
@@ -97,7 +103,6 @@ class InstancesController < ApplicationController
   end
 
   def hello
-      
     if !check_token
       api_render_error and return
     end
@@ -121,13 +126,59 @@ class InstancesController < ApplicationController
     @instance.needs_api_update = true
     @instance.save
 
-    publish :instance_requested_api_update, {'merlin_instance_id' => @instance.id}.to_json
+    publish :instance_requested_api_update, {'merlin_instance_id' => @instance.id, 'update_type' => :metadata}.to_json
     publish :instance_requested_dns_update, {'merlin_instance_id' => @instance.id}.to_json
 
     api_render_success("Instance #{@instance.instance_id} introduced to Merlin and queued for API/DNS update.") and return
 
   end
 
+  def puppet_signcert
+    if !check_token
+      api_render_error and return
+    end
+
+    publish :instance_requested_puppet_certificate, 
+    {'merlin_instance_id' => @instance.id}.to_json
+
+    api_render_success("Requesting signature for #{@instance.hostname}")
+  end
+
+  def complete
+    if !check_token
+      api_render_error and return
+    end
+
+    @instance.status_code = Instance::STATUS['active']
+    @instance.status_message = "Instance completed userdata run"
+    @instance.save
+
+    publish :instance_send_notification, {'merlin_instance_id' => @instance.id,
+      'template_id' => NotificationTemplate.find_by_name('complete').id}.to_json
+    
+    api_render_success("Notification request queued.")
+  end
+
+  def notify
+    if !check_token
+      api_render_error and return
+    end
+
+    @instance.status_code = Instance::STATUS['error']
+    @instance.status_message = "Instance encountered error while running userdata script (#{params[:condition]})"
+    @instance.save
+
+    template = NotificationTemplate.find_by_name(params[:condition])
+    if template.nil?
+      api_render_error("Template #{params[:condition]} not found")
+    end
+
+    publish :instance_send_notification, {'merlin_instance_id' => @instance.id,
+      'template_id' => template.id}.to_json
+    
+    api_render_success("Notification request queued.")
+
+  end
 
   protected
 
@@ -135,12 +186,12 @@ class InstancesController < ApplicationController
     if message
       flash.now[:notice] = message
     end
-    render :template => "api/response" 
+    render :template => "instances/api_response" 
   end
 
   def api_render_error(message)
     flash.now[:error] = message
-    render :template => "api/response" 
+    render :template => "instances/api_response", :status => 500 
   end
 
   def check_token
