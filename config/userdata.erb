@@ -19,6 +19,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+# Cry for help if we encounter any errors that aren't trapped
+trap errhandler 1 2 3 15 ERR
+
+### USER DEFINED VARIABLES ###
+### ERB in this template will be evaluated by Merlin, within the instance's binding.
+
 HOSTNAME='<%= hostname %>'
 MERLIN_API_ENDPOINT='https://merlin.tld'
 ACCESS_TOKEN='<%= access_token %>'
@@ -29,14 +35,19 @@ DEFAULT_FS='ext3'
 
 # A tag that will be used for logging and configuration. The script will create
 # /etc/$TAG and /var/log/$TAG.
-TAG='yourtag'
+TAG='merlin'
 
 # The command to be used to make API requests.
 FETCH='curl -k -D - -o -'
 
 # The entry that will be added to /etc/hosts as a failsafe for Puppet resolution.
 # Whatever you put here will be appended to /etc/hosts.
+# In the future, this will use Augeas.
 PUPPET_SERVER_HOSTS_ENTRY='1.2.3.4 puppet.tld puppet'
+
+# We will wait a maximum of TIMEOUT seconds for puppet to finish, then we assume
+# something is amiss. 
+TIMEOUT=600
 
 ### Only modify below here if you know what you're doing ###
 
@@ -48,6 +59,22 @@ if [ -d /etc/$TAG/control/userdata-complete ] || [ -d /var/log/$TAG ]; then
     echo "to run it again, remove /etc/$TAG/control/userdata-complete and /var/log/$TAG ."
     exit -1
 fi
+
+function errhandler {
+    echo "Error encountered: bailing out!"
+    set +e
+    $FETCH "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/notify?access_token=$ACCESS_TOKEN&condition=unknownerror" 
+    set -e
+    exit -1
+}
+
+function completed {
+    $FETCH "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/complete?access_token=$ACCESS_TOKEN"
+    touch /etc/$TAG/control/userdata-complete
+    echo "Provisioning complete!"
+    # Start up puppetd for real now
+    /etc/init.d/puppet start
+}
 
 function api_request {
     set +e
@@ -69,8 +96,12 @@ function api_request {
     set -e
 }
 
-# Make our log directory
+# Make our log directory / config directory
+mkdir -p /etc/$TAG/control
 mkdir -p /var/log/$TAG
+
+# Save our access token to a file
+echo $ACCESS_TOKEN > /etc/$TAG/merlin_access_token
 
 # Log everything to the startup logfile
 exec > /var/log/$TAG/startup.log
@@ -94,6 +125,9 @@ api_request hello "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/hello?hostname=$HOSTN
 
 # Ask Merlin to attach any additional storage that has been provisioned
 api_request attach_storage "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/attach_storage?access_token=$ACCESS_TOKEN"
+
+# Allow some time for the bus to settle after devices are attached
+sleep 5
 
 echo "Processing volume configuration..."
 <% for vol in volumes %>
@@ -121,7 +155,7 @@ mkdir -p <%= vol.mount_point %>
 mkfs -F -t $<%= vol_id %>_FS $<%= vol_id %>_DEVICE
 
 # Now, make an augeas file that will update our fstab appropriately.
-cat <<EOF /etc/$TAG/fstab.augeas.<%= vol.volume_id %>
+cat <<EOF >/etc/$TAG/fstab.augeas.<%= vol.volume_id %>
 defvar fstab /files/etc/fstab
 set \$fstab/01/spec $<%= vol_id %>_DEVICE
 set \$fstab/01/file <%= vol.mount_point %>
@@ -143,36 +177,40 @@ echo "Not dealing with volume <%= vol.attachment_device %>, mount point <%= vol.
 <% end %>
 
 echo "Starting puppet..."
-puppetd --onetime --verbose --waitforcert 5 &
+
+# Start puppet to get our certificate, and do initial provisioning. We use --no-daemonize
+# so it won't fork off, meaning $! is actually correct
+puppetd --onetime --verbose --waitforcert 5 --no-daemonize >/var/log/$TAG/puppet-initial.log 2>&1 &
 PUPPET_PID=$!
+
 echo $PUPPET_PID > /var/log/$TAG/puppet.pid
+
+# Wait a few seconds for Puppet to request a certificate from the master
 sleep 5
 
+# Now request that our certificate is signed by the CA
 api_request signcert "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/puppet_signcert?access_token=$ACCESS_TOKEN"
 
-# We will wait a maximum of ten minutes for puppet to finish, then we assume
-# something is amiss (this section probably needs some work)
-
-TIMEOUT=600
+# Turn off trapping errors, so that our eval doesn't trigger error handling
+trap - ERR
 count=0
 
 while ((count < TIMEOUT )); do
-    eval '[ ! -d "proc/$PUPPET_PID" ] && ((count = TIMEOUT))'
-    ((count++))
+    if [ ! -d "/proc/$PUPPET_PID" ]; then
+	completed
+	exit 0
+    fi
+    count=$(( count +1 ))
     sleep 1
 done
 
-if [ -d "proc/$PUPPET_PID" ];
+# If we get here, puppet should still be running...let's verify that just to be sure
+if [ -z "$(pgrep puppetd)" ]
 then
-    $FETCH "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/notify?access_token=$ACCESS_TOKEN&condition=puppetlongrunning" 
+    completed
+    exit 0
 else
-    $FETCH "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/complete?access_token=$ACCESS_TOKEN"
+    $FETCH "$MERLIN_API_ENDPOINT/api/i/$INSTANCE_ID/notify?access_token=$ACCESS_TOKEN&condition=puppetlongrunning" 
+    echo "Puppet process not completed? Alerting."
+    exit -1
 fi
-
-touch /etc/$TAG/control/userdata-complete
-
-echo "Provisioning complete!"
-
-# Start up puppetd for real now
-
-/etc/init.d/puppet start
