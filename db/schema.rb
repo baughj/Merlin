@@ -9,7 +9,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20110408150041) do
+ActiveRecord::Schema.define(:version => 20110418180625) do
 
   create_table "availability_zones", :force => true do |t|
     t.string   "name"
@@ -50,6 +50,7 @@ ActiveRecord::Schema.define(:version => 20110408150041) do
     t.integer  "dns_provider_id"
     t.integer  "cloud_type_id"
     t.string   "puppet_capath"
+    t.string   "api_user"
   end
 
   create_table "dns_providers", :force => true do |t|
