@@ -17,7 +17,7 @@
         <%= form.input :kernel_id, :label => "Kernel ID", :hint => "The cloud ID for the kernel you wish to use. If left blank, the default will be used", :required => false %>
         <%= form.input :ramdisk_id, :label => "Ramdisk ID", :hint => "The cloud ID for the ramdisk you wish to use. If left blank, the default will be used", :required => false %>
         <li class="select required" id="instance_type_vm_type_input"><label for="instance_type_vm_type_id">VM Type<abbr title="required">*</abbr></label><span id="instance_type_vm_type_list">
-          <select id="instance_type[vm_type]"><%= options_from_collection_for_select(Cloud.first.cloud_type.vm_type, "id", "name", 1) %></select></span>
+          <select id="instance_type[vm_type]"><%= options_from_collection_for_select(Cloud.first.cloud_type.vm_types, "id", "name", 1) %></select></span>
 
         <%= form.input :os, :label => "OS Type", :hint => "A description of the OS for this image type (e.g. 'Ubuntu Lucid')", :required => false %>
         <%= form.input :description, :label => "Description", :hint => "A description of this instance type (e.g. 'Standard Webhead')", :required => false %>
