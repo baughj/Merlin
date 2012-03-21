@@ -20,7 +20,6 @@ require "AWS"
 
 module MerlinApiHelper
 
-
   class MerlinEC2Connector < AWS::EC2::Base
     # Implement some filtering here since the gem doesn't, yet
     def describe_volumes_with_filter(options = {})
@@ -35,7 +34,8 @@ module MerlinApiHelper
 
   class MerlinEucalyptusConnector < AWS::EC2::Base
     # Eucalyptus doesn't support the same API versions as EC2 currently
-    API_VERSION='2009-11-30'
+    #API_VERSION = '2009-11-30' # Eucalyptus 2
+    API_VERSION = '2010-08-31' # Eucalyptus 3
 
     def api_version
       API_VERSION
@@ -58,7 +58,7 @@ module MerlinApiHelper
         @connector = MerlinEucalyptusConnector.new(:access_key_id => access_key_id,
                                                    :secret_access_key => access_key,
                                                    :server => endpoint.host,
-                                                   :usessl => usessl,
+                                                   :use_ssl => usessl,
                                                    :path => endpoint.path,
                                                    :port => endpoint.port)
       elsif cloud_type == 'aws' then
