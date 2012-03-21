@@ -147,33 +147,65 @@ class Cloud < ActiveRecord::Base
 
     rset = @connector.describe_instances.reservationSet
 
+    
     if !rset.nil?
-      rset.item.each do |reservationSet|
-        # Each reservation set, remember, can have multiple instances
-        reservationSet.instancesSet.item.each do |instance|
-          i = Instance.find_by_instance_id(instance.instanceId)
-          if i.nil?
-            i = Instance.new(:instance_id => instance.instanceId)
-            i.status_code = Instance::STATUS['running']
-            i.status_message = "API refresh discovered new instance"
-            i.cloud = self
-          end
-          i.update_properties(instance)
-          # Set a few things that aren't simple assignments, this should be abstracted eventually
-          logger.debug("instance #{instance.instanceId} has secgroup(s) #{reservationSet.groupSet.item.inspect}, vmType #{instance.instanceType}, keyPair #{instance.keyName}")
-          i.vm_type = VmType.find_by_name_and_cloud_type_id(instance['instanceType'], self.cloud_type)
-          i.key_pair = KeyPair.find_by_name_and_cloud_id(instance['keyName'], self)
-          reservationSet.groupSet.item.each do |secgroup|
-            i.security_groups << SecurityGroup.find_by_name_and_cloud_id(secgroup.groupId,
-                                                                         self)
-          end
-          i.save
-        end
+
+      # Hack up the unwieldy return to make things easier
+      cloud_instances = rset.item.collect { |r| r.instancesSet.item.collect {
+          |i| { 'secgroup' => r.groupSet.item, 'reservation' => r.reservationId,
+            'instance' => i }
+        }
+      }.flatten
+
+      merlin_instance_ids = Instance.all.collect { |i| i.instance_id }
+      cloud_instance_ids = cloud_instances.collect { |i| i['instance'].instanceId }
+
+      # Instances that are "orphaned" - may have been deleted outside of Merlin, etc
+      orphan_instances = merlin_instance_ids - cloud_instance_ids
+      orphan_instances.each do |oi|
+        logger.debug "Removing orphaned instance #{oi}"
+        Instance.find_by_instance_id(oi).destroy
       end
+
+      # Now process the instances that actually exist
+      cloud_instances.each do |c|
+        i = Instance.find_by_instance_id(c.instance.instanceId)
+        logger.debug "Instance #{c.instance.instanceId} is #{c.instance.instanceState['name']}"
+        # We don't care about terminated instances we never knew about 
+        if i.nil? and (c.instance.instanceState['name'] == "terminated" or
+                       c.instance.instanceState['name'] == "shutting-down")
+          next
+        elsif i.nil? and (c.instance.instanceState['name'] != "terminated" or
+                          c.instance.instanceState['name'] != "shutting-down")
+          i = Instance.new(:instance_id => c.instance.instanceId)
+          i.status_code = Instance::STATUS[c.instance.instanceState['name']]
+          i.status_message = "API refresh discovered new instance"
+          i.cloud = self
+        elsif !i.nil? and c.instance.instanceState['name'] == 'terminated'
+          logger.debug("Deleting terminated instance #{i.instance_id}")
+          i.destroy
+          next
+        end
+
+        secgroups = c.secgroup.collect { |sg| sg.groupId}
+        # Set a few things that aren't simple assignments, this should be abstracted eventually
+        logger.debug("instance #{c.instance.instanceId} has secgroup(s) #{secgroups.to_a}, vmType #{c.instance.instanceType}, keyPair #{c.instance.keyName}")    
+        i.vm_type = VmType.find_by_name_and_cloud_type_id(c.instance.instanceType, self.cloud_type)
+        i.key_pair = KeyPair.find_by_name_and_cloud_id(c.instance.keyName, self)
+        i.update_properties(c.instance)
+        # Refresh security groups from API results
+        i.security_groups = []
+        secgroups.each do |secgroup|
+          i.security_groups << SecurityGroup.find_by_name_and_cloud_id(secgroup,
+                                                                       self)
+        end
+        i.save
+      end
+      
     end
-
+  
     vset = @connector.describe_volumes.volumeSet
-
+    
     if !vset.nil? 
       vset.item.each do |volume|
         v = Volume.find_or_create_by_volume_id(volume.volumeId)
@@ -181,7 +213,7 @@ class Cloud < ActiveRecord::Base
         v.update_properties(volume)
       end
     end
-
+    
     # Snapshot support not done yet
 
     #@connector.describe_snapshots.snapshotSet.item.each do |snap|
