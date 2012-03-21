@@ -34,12 +34,6 @@ class InstancesController < ApplicationController
       publish :instance_requested_reservation, {'merlin_instance_id' => @instance.id}.to_json
       @instance.status_code = Instance::STATUS['requested']
       @instance.status_message = "Submitted creation request to Merlin."    
-      @instance.volumes.each do |vol|
-        logger.info('Setting volume cloud/az')
-        vol.cloud = @instance.cloud
-        vol.availability_zone = @instance.availability_zone
-        vol.save
-      end
       @instance.save
       flash[:notice] = "Instance request submitted."
       render :template => "merlin/index-new.erb" and return

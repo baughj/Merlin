@@ -235,7 +235,8 @@ class Instance < ActiveRecord::Base
     # Now that we've found the reservation, we need to find the instance inside
     # of it, but we first get our security group information from the
     # reservation
-
+    security_groups = []
+    self.save
     r_info.groupSet.item.each do |secgroup|
       security_groups << SecurityGroup.find_or_create_by_name_and_cloud_id(secgroup.groupId,
                                                                               cloud)
@@ -331,7 +332,7 @@ class Instance < ActiveRecord::Base
 
     r = cloud.api_request(:run_instances, false, run_instance_options)
 
-    if r.nil?
+    if !r
       logger.debug("Instance reservation request failed: #{cloud.get_api_error}")
       self.status_code = STATUS['error']
       self.status_message = "Instance reservation request FAILED: #{cloud.get_api_error}"

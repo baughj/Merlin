@@ -52,6 +52,9 @@ class InstanceRequestedReservationProcessor < ApplicationProcessor
     
     instance.volumes.each do |vol| 
       logger.debug("Checking volume #{vol.id}, instance #{vol.instance.id}, cloud #{vol.cloud}")
+      vol.availability_zone = instance.availability_zone
+      vol.cloud = instance.cloud
+      vol.save
       if !vol.reserve
         logger.error("Reservation of a requested volume was not successful: #{volume.get_error}")
         instance.status_message = 'Error: Reservation of a requested volume was not successful: #{volume.get_error}'
