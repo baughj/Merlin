@@ -146,27 +146,28 @@ class Cloud < ActiveRecord::Base
     # using the information returned.
 
     rset = @connector.describe_instances.reservationSet
-
-    
+    cloud_instances = []
+    # Hack up the unwieldy return to make things easier
     if !rset.nil?
-
-      # Hack up the unwieldy return to make things easier
       cloud_instances = rset.item.collect { |r| r.instancesSet.item.collect {
           |i| { 'secgroup' => r.groupSet.item, 'reservation' => r.reservationId,
             'instance' => i }
         }
       }.flatten
+    end  
+    
+    merlin_instance_ids = Instance.all.collect { |i| i.instance_id }
+    cloud_instance_ids = cloud_instances.collect { |i| i['instance'].instanceId }
+    
+    # Instances that are "orphaned" - may have been deleted outside of Merlin, etc
+    orphan_instances = merlin_instance_ids - cloud_instance_ids
 
-      merlin_instance_ids = Instance.all.collect { |i| i.instance_id }
-      cloud_instance_ids = cloud_instances.collect { |i| i['instance'].instanceId }
+    orphan_instances.each do |oi|
+      logger.debug "Removing orphaned instance #{oi}"
+      Instance.find_by_instance_id(oi).destroy
+    end
 
-      # Instances that are "orphaned" - may have been deleted outside of Merlin, etc
-      orphan_instances = merlin_instance_ids - cloud_instance_ids
-      orphan_instances.each do |oi|
-        logger.debug "Removing orphaned instance #{oi}"
-        Instance.find_by_instance_id(oi).destroy
-      end
-
+    if !rset.nil?
       # Now process the instances that actually exist
       cloud_instances.each do |c|
         i = Instance.find_by_instance_id(c.instance.instanceId)
