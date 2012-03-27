@@ -150,7 +150,9 @@ class Cloud < ActiveRecord::Base
     # Hack up the unwieldy return to make things easier
     if !rset.nil?
       cloud_instances = rset.item.collect { |r| r.instancesSet.item.collect {
-          |i| { 'secgroup' => r.groupSet.item, 'reservation' => r.reservationId,
+          |i| { 'secgroup' => (i.instanceState['name'] != 'terminated' && 
+                               i.instanceState['name'] != 'shutting-down' && r.groupSet.item) || nil, 
+            'reservation' => r.reservationId,
             'instance' => i }
         }
       }.flatten

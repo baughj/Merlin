@@ -235,11 +235,13 @@ class Instance < ActiveRecord::Base
     # Now that we've found the reservation, we need to find the instance inside
     # of it, but we first get our security group information from the
     # reservation
-    security_groups = []
+
+    self.security_groups = []
     self.save
+
     r_info.groupSet.item.each do |secgroup|
-      security_groups << SecurityGroup.find_or_create_by_name_and_cloud_id(secgroup.groupId,
-                                                                              cloud)
+      self.security_groups << SecurityGroup.find_or_create_by_name_and_cloud_id(secgroup.groupId,
+                                                                                cloud)
     end
 
     # Now grab the instance we're actually looking for
@@ -266,13 +268,16 @@ class Instance < ActiveRecord::Base
         if i_info.blockDeviceMapping.nil?
           logger.debug("API endpoint doesn't return blockDeviceMapping")
           a_info = cloud.api_request(:describe_volumes,
-                                     false).volumeSet.item.select {
+                                     false)
+          if !a_info.volumeSet.nil?
+            a_info.volumeSet.item.select {
             |a| !a.attachmentSet.nil? }.map{
             |b| b.attachmentSet.item }
-          # a_info is an array of attachmentSet items
-          a_info.each do |attachment|
+            # a_info is an array of attachmentSet items
+            a_info.each do |attachment|
             vol = Volume.find_or_create_by_volume_id(attachment.volumeId)
             vol.update_from_api
+            end
           end
         else
           # Combine two arrays of volumeIds: ones reported by the API, and
